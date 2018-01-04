@@ -1,14 +1,16 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
-(ns 
-  ^{:doc "compute a file checksum."}
+;;----------------------------------------------------------------
+(ns palisades.lakes.curate.scripts.checksum
   
-  curate.scripts.checksum
+  {:doc "compute a file checksum."
+   :author "palisades dot lakes at gmail dot com"
+   :version "2018-01-03"}
   
   (:require [clojure.java.io :as io])
   (:use [clojure.set :only [difference]])
   (:gen-class))
-;;------------------------------------------------------------------------------
+;;----------------------------------------------------------------
 (defn checksum [file]
   (let [input (java.io.FileInputStream. file)
         digest (java.security.MessageDigest/getInstance "MD5")
@@ -44,4 +46,4 @@
     (println "Enter a root directory")
     (remove-dupes (find-dupes (first args))))
   (System/exit 0))
-;;------------------------------------------------------------------------------
+;;----------------------------------------------------------------
