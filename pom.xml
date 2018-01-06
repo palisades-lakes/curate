@@ -62,23 +62,19 @@
    </plugin>
   </plugins>
  </build>
-  <dependencies>
-  <dependency>
-   <groupId>pandect</groupId>
-   <artifactId>pandect</artifactId>
-   <version>${pandect-version}</version>
-  </dependency>
-  <!-- 
-  <dependency>
-   <groupId>digest</groupId>
-   <artifactId>digest</artifactId>
-   <version>${clj-digest-version}</version>
-  </dependency>
+ <dependencies>
+  <!-- <dependency> <groupId>pandect</groupId> <artifactId>pandect</artifactId> <version>${pandect-version}</version> 
+   </dependency> <dependency> <groupId>digest</groupId> <artifactId>digest</artifactId> 
+   <version>${clj-digest-version}</version> </dependency> -->
   <dependency>
    <groupId>com.drewnoakes</groupId>
    <artifactId>metadata-extractor</artifactId>
    <version>${metadata-extractor-version}</version>
   </dependency>
-   -->
+  <dependency>
+   <groupId>io.joshmiller</groupId>
+   <artifactId>exif-processor</artifactId>
+   <version>${exif-processor-version}</version>
+  </dependency>
  </dependencies>
 </project>
