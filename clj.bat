@@ -1,6 +1,6 @@
 @echo off
 :: palisades.lakes (at) gmail (dot) com
-:: 2018-01-03
+:: 2018-01-09
 
 ::set GC=-XX:+AggressiveHeap -XX:+UseStringDeduplication 
 set GC=
@@ -21,9 +21,12 @@ set THRUPUT=-d64 -server
 ::set XMX=-Xms29g -Xmx29g -Xmn11g 
 set XMX=-Xms12g -Xmx12g -Xmn5g 
 
+set OPENS=--add-opens java.base/java.lang=ALL-UNNAMED
 set CP=-cp ./src/scripts/clojure;lib/*
+
+set JAVA_HOME=%JAVA9%
 set JAVA="%JAVA_HOME%\bin\java"
 
-set CMD=%JAVA% %THRUPUT% -ea -dsa -Xbatch %GC% %PROF% %XMX% %COMPRESSED% %TRACE% %CP% clojure.main %*
+set CMD=%JAVA% %THRUPUT% -ea -dsa -Xbatch %GC% %PROF% %XMX% %COMPRESSED% %TRACE% %OPENS% %CP% clojure.main %*
 ::echo %CMD%
 %CMD%

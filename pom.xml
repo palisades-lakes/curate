@@ -67,9 +67,20 @@
    </dependency> <dependency> <groupId>digest</groupId> <artifactId>digest</artifactId> 
    <version>${clj-digest-version}</version> </dependency> -->
   <dependency>
+   <groupId>com.adobe.xmp</groupId>
+   <artifactId>xmpcore</artifactId>
+   <version>${xmp-core-version}</version>
+  </dependency>
+  <dependency>
    <groupId>com.drewnoakes</groupId>
    <artifactId>metadata-extractor</artifactId>
    <version>${metadata-extractor-version}</version>
+   <exclusions>
+    <exclusion>
+     <groupId>com.adobe.xmp</groupId>
+     <artifactId>xmpcore</artifactId>
+    </exclusion>
+   </exclusions>
   </dependency>
   <dependency>
    <groupId>io.joshmiller</groupId>
