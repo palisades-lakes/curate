@@ -7,7 +7,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-01-09"}
+   :version "2018-01-12"}
   
   (:require [clojure.set :as set]
             [clojure.string :as s]
@@ -30,29 +30,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
-(defn print-exif [^File f]
-  (let [^Metadata m 
-        (try (ImageMetadataReader/readMetadata f)
-          (catch Throwable t
-            (binding [*err* *out*]
-              (stacktrace/print-cause-trace t))
-            (throw t)))
-        ^Iterable ds (.getDirectories m)
-        exif (exif/exif-for-file f)]
-    (doseq [^Directory d (seq ds)]
-      (println)
-      #_(println "----------------------------------------")
-      (println (class d) (.getName d) (.getTagCount d))
-      (doseq [^Tag tag (.getTags d)]
-        (println (.getTagTypeHex tag) (.getTagName tag) 
-                 ":" (.getDescription tag))
-        (println (.toString tag))))
-    #_(let [^ExifSubIFDDirectory d 
-            (.getFirstDirectoryOfType m ExifSubIFDDirectory)
-            date 
-            (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
-        (println date))
-    (pp/pprint exif)))
+;; image files
 ;;----------------------------------------------------------------
 (defn upathname 
   "return a unix style pathname string."
@@ -127,7 +105,7 @@
     "dng" ;; Adobe, Leica
     "erf" ;; Epson
     "fff" ;; Imacon/Hasselblad raw
-    "gif" 
+    #_"gif" 
     "ico"
     "jpeg" "jpg" 
     "m4v"
@@ -162,20 +140,91 @@
   (assert (.exists d))
   (filter image-file? (file-seq d)))
 ;;----------------------------------------------------------------
+;; image metadata
+;;----------------------------------------------------------------
+(defn print-image-metadata [^File f]
+  (let [^Metadata m 
+        (try (ImageMetadataReader/readMetadata f)
+          (catch Throwable t
+            (binding [*err* *out*]
+              (stacktrace/print-cause-trace t))
+            (throw t)))
+        ^Iterable ds (.getDirectories m)
+        exif (exif/exif-for-file f)]
+    (doseq [^Directory d (seq ds)]
+      (println)
+      #_(println "----------------------------------------")
+      (println (class d) (.getName d) (.getTagCount d))
+      (doseq [^Tag tag (.getTags d)]
+        (println (.getTagTypeHex tag) (.getTagName tag) 
+                 ":" (.getDescription tag))
+        (println (.toString tag))))
+    #_(let [^ExifSubIFDDirectory d 
+            (.getFirstDirectoryOfType m ExifSubIFDDirectory)
+            date 
+            (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
+        (println date))
+    (pp/pprint exif)))
+;;----------------------------------------------------------------
+;; datetimes
+;;----------------------------------------------------------------
+(def ^:private datetime-regex #"((?i)date)|((?i)time)")
+(defn- dt-string? [^String s] (re-find datetime-regex s))
+;;----------------------------------------------------------------
+(defn exif-map-datetimes ^Map [^Map exif]
+  (into (sorted-map) (filter #(dt-string? (key %))) exif))
+;;----------------------------------------------------------------
+(defn print-exif-map-datetimes [^Map exif]
+  (pp/pprint (exif-map-datetimes exif)))
+;;----------------------------------------------------------------
+(defn- directory-has-datetimes? [^Directory d]
+  (loop [tags (seq (.getTags d))]
+    (if (empty? tags)
+      false
+      (let [^Tag tag (first tags)]
+        (if (dt-string? (.getTagName tag))
+          true
+          (recur (rest tags)))))))
+;;----------------------------------------------------------------
+(defn print-image-metadata-datetimes [^File f]
+  (let [^Metadata m 
+        (try (ImageMetadataReader/readMetadata f)
+          (catch Throwable t
+            (binding [*err* *out*]
+              (stacktrace/print-cause-trace t))
+            (throw t)))
+        ^Iterable ds (.getDirectories m)
+        exif (exif-map-datetimes (exif/exif-for-file f))]
+    (doseq [^Directory d (seq ds)]
+      (when (directory-has-datetimes? d)
+        #_(println "----------------------------------------")
+        (println (class d) (.getName d) (.getTagCount d))
+        (doseq [^Tag tag (.getTags d)]
+          (when (dt-string? (.getTagName tag))
+            (println (.getTagTypeHex tag) (.getTagName tag) 
+                     ":" (.getDescription tag))
+            (println (.toString tag)))))
+      #_(let [^ExifSubIFDDirectory d 
+              (.getFirstDirectoryOfType m ExifSubIFDDirectory)
+              date 
+              (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
+          (println date)))
+    (when-not (empty? exif) (pp/pprint exif))))
+;;----------------------------------------------------------------
 (def ^:private arw-format 
   (DateTimeFormatter/ofPattern "yyyy:MM:dd HH:mm:ss"))
 (defn- parse-datetime ^LocalDateTime [^String s]
   (LocalDateTime/parse s arw-format))
 ;;----------------------------------------------------------------
-(defn exif-datetime ^LocalDateTime [^File f exif]
+(defn exif-datetime ^LocalDateTime [^File f ^Map exif]
   (if-not exif
     nil
     (let [dts (get exif "Date/Time")]
       (if-not dts 
         (do 
           (println "no Date/Time:" (upathname f))
-          (pp/pprint exif)
-          #_(print-exif f))
+          (print-image-metadata-datetimes f)
+          (println))
         (parse-datetime dts)))))
 ;;----------------------------------------------------------------
 (defn file-attributes ^Map [^File f]
@@ -205,6 +254,8 @@
       (println "error:" (upathname f))
       (binding [*err* *out*] (stacktrace/print-cause-trace t))
       (throw t))))
+;;----------------------------------------------------------------
+;; file equality
 ;;----------------------------------------------------------------
 (defn- file-checksum [^File file]
   (let [input (FileInputStream. file)

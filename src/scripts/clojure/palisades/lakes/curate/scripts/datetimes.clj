@@ -5,7 +5,7 @@
   
   {:doc "find image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-01-09"}
+   :version "2018-01-12"}
   
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pp]
