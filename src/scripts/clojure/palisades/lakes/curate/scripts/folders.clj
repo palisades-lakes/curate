@@ -1,9 +1,9 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
-(ns palisades.lakes.curate.scripts.datetimes
+(ns palisades.lakes.curate.scripts.folders
   
-  {:doc "find image files."
+  {:doc "list new folders."
    :author "palisades dot lakes at gmail dot com"
    :version "2018-01-12"}
   
@@ -12,16 +12,15 @@
             [exif-processor.core :as exif]
             [palisades.lakes.curate.curate :as curate])
   (:import [java.io File]))
-;; clj9 src\scripts\clojure\palisades\lakes\curate\scripts\datetimes.clj > datetimes.txt 
+;; clj9 src\scripts\clojure\palisades\lakes\curate\scripts\folders.clj > folders.txt 
 ;;----------------------------------------------------------------
 ;; TODO: search all drives?
 (let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
-      d (io/file drive "porta" "Pictures")]
+      d0 (io/file drive "porta" "Pictures")
+      d1 (io/file drive "porta" "pic")]
   (pp/pprint
-    (mapv curate/upathname
-          (get
-            (group-by 
-              curate/image-file-datetime
-              (curate/image-file-seq d))
-            nil))))
+    (into (sorted-set)
+          (map #(curate/upathname 
+                  (.getParentFile (curate/new-path % d1))))
+          (curate/image-file-seq d0))))
 ;;----------------------------------------------------------------

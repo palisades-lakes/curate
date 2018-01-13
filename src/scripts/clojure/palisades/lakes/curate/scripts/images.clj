@@ -1,4 +1,4 @@
-(set! *warn-on-reflection* true)
+IMG_0227.JPG(set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
 (ns palisades.lakes.curate.scripts.images
@@ -11,7 +11,7 @@
             [clojure.pprint :as pp]
             [palisades.lakes.curate.curate :as curate]))
 ;;----------------------------------------------------------------
-(let [d (io/file "e:/" "porta" #_"Pictures")
+(let [d (io/file "s:/" "porta" #_"Pictures")
       filetypes (into (sorted-set)
                       (map curate/file-type)
                       (file-seq d))]

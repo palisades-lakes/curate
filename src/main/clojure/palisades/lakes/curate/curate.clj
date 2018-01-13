@@ -37,6 +37,13 @@
   ^String [^File f]
   (s/replace (.getPath f) "\\" "/"))
 ;;----------------------------------------------------------------
+(defn file-prefix ^String [^File f]
+  (let [filename (.getName f)
+        i (s/last-index-of filename ".")]
+    (if (nil? i)
+      filename
+      (s/lower-case (subs filename 0 i)))))
+;;----------------------------------------------------------------
 (defn file-type ^String [^File f]
   (let [filename (.getName f)
         i (s/last-index-of filename ".")
@@ -152,13 +159,16 @@
         ^Iterable ds (.getDirectories m)
         exif (exif/exif-for-file f)]
     (doseq [^Directory d (seq ds)]
-      (println)
-      #_(println "----------------------------------------")
-      (println (class d) (.getName d) (.getTagCount d))
+      #_(println)
+      #_(println ".....................................")
+      (println "..." (class d) (.getName d) (.getTagCount d))
       (doseq [^Tag tag (.getTags d)]
-        (println (.getTagTypeHex tag) (.getTagName tag) 
-                 ":" (.getDescription tag))
-        (println (.toString tag))))
+        (println 
+          (.getTagName tag) ":" (.getDescription tag)
+          (str "[" (.getDirectoryName tag) " " 
+               (.getTagTypeHex tag) "]"))
+        
+        #_(println (.toString tag))))
     #_(let [^ExifSubIFDDirectory d 
             (.getFirstDirectoryOfType m ExifSubIFDDirectory)
             date 
@@ -215,17 +225,23 @@
   (DateTimeFormatter/ofPattern "yyyy:MM:dd HH:mm:ss"))
 (defn- parse-datetime ^LocalDateTime [^String s]
   (LocalDateTime/parse s arw-format))
+(def ^:private file-prefix-format 
+  (DateTimeFormatter/ofPattern "yyyyMMdd-HHmmss"))
+(def ^:private year-format 
+  (DateTimeFormatter/ofPattern "yyyy"))
+(def ^:private month-format 
+  (DateTimeFormatter/ofPattern "MM"))
 ;;----------------------------------------------------------------
 (defn exif-datetime ^LocalDateTime [^File f ^Map exif]
   (if-not exif
     nil
     (let [dts (get exif "Date/Time")]
-      (if-not dts 
-        (do 
-          (println "no Date/Time:" (upathname f))
-          (print-image-metadata-datetimes f)
-          (println))
-        (parse-datetime dts)))))
+      (if dts 
+        (parse-datetime dts)
+        #_(do 
+            (println "no Date/Time:" (upathname f))
+            (print-image-metadata-datetimes f)
+            (println))))))
 ;;----------------------------------------------------------------
 (defn file-attributes ^Map [^File f]
   (Files/readAttributes
@@ -250,6 +266,88 @@
                            (.get attributes "creationTime"))]
           (filetime-to-localdatetime filetime))
         ldt))
+    (catch Throwable t
+      (println "error:" (upathname f))
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+;; camera make/model
+;;----------------------------------------------------------------
+(defn image-file-make ^String [^File f]
+  (try
+    (let [exif (exif/exif-for-file f)
+          make (if (empty? exif)
+                 (println "no exif:" (upathname f))
+                 (get exif "Make"))
+          ^String make (when make (s/lower-case make))
+          make (if (and make (.startsWith make "nikon"))
+                 "nikon"
+                 make)]
+      (when (nil? make)
+        (println)
+        (println 
+          "-----------------------------------------------------")
+        (println (upathname f))
+        (print-image-metadata f))
+      make)
+    (catch Throwable t
+      (println "error:" (upathname f))
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+(defn image-file-model ^String [^File f]
+  (try
+    (let [exif (exif/exif-for-file f)
+          model (if (empty? exif)
+                  (println "no exif:" (upathname f))
+                  (get exif "Model"))
+          ^String model (when model (s/lower-case model))
+          ^String model (when model (s/replace model #"[ \-]+" ""))]
+      (when (nil? model)
+        (println)
+        (println 
+          "-----------------------------------------------------")
+        (println (upathname f))
+        (print-image-metadata f))
+      model)
+    (catch Throwable t
+      (println "error:" (upathname f))
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+(defn image-file-camera ^String [^File f]
+  (try
+    (let [make (image-file-make f)
+          model (image-file-model f)
+          model (when (and model make) (s/replace model make ""))]
+      (when (nil? model)
+        (println)
+        (println 
+          "-----------------------------------------------------")
+        (println (upathname f))
+        (print-image-metadata f))
+      (str make model))
+    (catch Throwable t
+      (println "error:" (upathname f))
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+;; renaming
+;;----------------------------------------------------------------
+(defn new-path ^File [^File f ^File new-folder]
+  (try
+    (let [^LocalDateTime ldt (image-file-datetime f)
+          ^String year (format "%04d" (.getYear ldt))
+          ^String month (format "%02d" (.getMonthValue ldt))
+          ^String prefix (.format ldt file-prefix-format)
+          ^String ext (file-type f)
+          ^String suffix (or (image-file-camera f)
+                             (file-prefix f))
+          ^File new-path (io/file 
+                           new-folder year month 
+                           (str prefix "-" suffix "." ext))]
+      #_(io/make-parents new-path)
+      new-path)
     (catch Throwable t
       (println "error:" (upathname f))
       (binding [*err* *out*] (stacktrace/print-cause-trace t))
