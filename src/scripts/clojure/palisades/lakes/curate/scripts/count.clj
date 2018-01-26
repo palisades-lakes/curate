@@ -12,6 +12,6 @@
             [palisades.lakes.curate.curate :as curate]))
 ;;----------------------------------------------------------------
 (let [d (io/file "s:/" "porta" #_"Pictures")]
-  (println (curate/upathname d))
+  (println (curate/unix-path d))
   (println (count (curate/image-file-seq d))))
 ;;----------------------------------------------------------------

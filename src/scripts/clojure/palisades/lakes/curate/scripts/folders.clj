@@ -20,7 +20,7 @@
       d1 (io/file drive "porta" "pic")]
   (pp/pprint
     (into (sorted-set)
-          (map #(curate/upathname 
+          (map #(curate/unix-path 
                   (.getParentFile (curate/new-path % d1))))
           (curate/image-file-seq d0))))
 ;;----------------------------------------------------------------

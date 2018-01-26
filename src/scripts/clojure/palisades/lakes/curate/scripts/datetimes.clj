@@ -18,7 +18,7 @@
 (let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
       d (io/file drive "porta" "Pictures")]
   (pp/pprint
-    (mapv curate/upathname
+    (mapv curate/unix-path
           (get
             (group-by 
               curate/image-file-datetime
