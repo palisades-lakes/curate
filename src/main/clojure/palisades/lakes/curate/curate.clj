@@ -7,7 +7,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-01-25"}
+   :version "2018-11-19"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -145,7 +145,7 @@
 (defn image-file? [^File f] (image-file-type? (file-type f)))
 ;;----------------------------------------------------------------
 (defn image-file-seq [^File d]
-  (assert (.exists d))
+  (assert (.exists d) (.getPath d))
   (filter image-file? (file-seq d)))
 ;;----------------------------------------------------------------
 ;; image metadata
@@ -153,23 +153,23 @@
 (defn print-image-metadata [^File f]
   (let [;;^Metadata m 
         #_(try (ImageMetadataReader/readMetadata f)
-           (catch Throwable t
-             (binding [*err* *out*]
-               (stacktrace/print-cause-trace t))
-             (throw t)))
+            (catch Throwable t
+              (binding [*err* *out*]
+                (stacktrace/print-cause-trace t))
+              (throw t)))
         ;;^Iterable ds (.getDirectories m)
         exif (exif/exif-for-file f)]
     #_(doseq [^Directory d (seq ds)]
-       #_(println)
-       #_(println ".....................................")
-       (println "..." (class d) (.getName d) (.getTagCount d))
-       (doseq [^Tag tag (.getTags d)]
-         (println 
-           (.getTagName tag) ":" (.getDescription tag)
-           (str "[" (.getDirectoryName tag) " " 
-                (.getTagTypeHex tag) "]"))
-        
-         #_(println (.toString tag))))
+        #_(println)
+        #_(println ".....................................")
+        (println "..." (class d) (.getName d) (.getTagCount d))
+        (doseq [^Tag tag (.getTags d)]
+          (println 
+            (.getTagName tag) ":" (.getDescription tag)
+            (str "[" (.getDirectoryName tag) " " 
+                 (.getTagTypeHex tag) "]"))
+          
+          #_(println (.toString tag))))
     #_(let [^ExifSubIFDDirectory d 
             (.getFirstDirectoryOfType m ExifSubIFDDirectory)
             date 
@@ -268,7 +268,7 @@
           (filetime-to-localdatetime filetime))
         ldt))
     (catch Throwable t
-      (println "error:" (unix-path f))
+      (println "ERROR:" (unix-path f))
       (binding [*err* *out*] (stacktrace/print-cause-trace t))
       (throw t))))
 ;;----------------------------------------------------------------
@@ -368,11 +368,11 @@
           (and (== n0 n1) (Arrays/equals b0 b1)) (recur)
           :else 
           (do 
-            (println "not identical:")
-            (println (unix-path f0))
-            (print-image-metadata f0)
-            (println (unix-path f1)) 
-            (print-image-metadata f1)
+            #_(println "not identical:")
+            #_(println (unix-path f0))
+            #_(print-image-metadata f0)
+            #_(println (unix-path f1)) 
+            #_(print-image-metadata f1)
             false))))))
 ;;----------------------------------------------------------------
 ;; renaming
@@ -396,9 +396,10 @@
                              (str fname "." ext))]
         new-file)
       (catch Throwable t
-        (println "error:" (unix-path f))
+        (println "ERROR:" (unix-path f))
         (binding [*err* *out*] (stacktrace/print-cause-trace t))
-        (throw t))))
+        #_(throw t)
+        nil)))
   (^File [^File f ^File d] (new-path f d nil)))
 ;;----------------------------------------------------------------
 (defn- increment-version ^String [^String version]
@@ -409,15 +410,25 @@
 (defn rename-image 
   ([^File f0 ^File d ^String version]
     (let [^File f1 (new-path f0 d version)]
-      (if-not (.exists f1)
-        (do 
-          #_(println "copy:")
-          #_(println (unix-path f0))
-          #_(println (unix-path f1))
-          (io/make-parents f1)
-          (io/copy f0 f1))
-        (when-not (identical-contents? f0 f1)
-          (recur f0 d (increment-version version))))))
+      ;; no new path if image file not parsable 
+      (when f1
+        (if-not (.exists f1)
+          (do 
+            #_(println "copy:")
+            #_(println (unix-path f0))
+            #_(println (unix-path f1))
+            (io/make-parents f1)
+            (io/copy f0 f1))
+          (if-not (identical-contents? f0 f1)
+            (do
+              (println "similar:")
+              (println (.getPath f0))
+              (println (.getPath f1))
+              (recur f0 d (increment-version version)))
+            (do
+              (println "identical:")
+              (println (.getPath f0))
+              (println (.getPath f1))))))))
   ([^File f0 ^File d]
     (rename-image f0 d nil)))
 
