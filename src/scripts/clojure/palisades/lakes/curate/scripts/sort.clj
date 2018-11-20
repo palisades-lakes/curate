@@ -12,11 +12,11 @@
 ;; clj src\scripts\clojure\palisades\lakes\curate\scripts\sort.clj > sort.txt 
 ;;----------------------------------------------------------------
 ;; TODO: search all drives?
-(doseq [dir [#_"Pictures" "photo"]]
-  (let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
-        ;;d0 (io/file drive "photo" "dxo-small")
-        d0 (io/file drive dir)
-        d1 (io/file drive "pic")]
-    (doseq [f0 (curate/image-file-seq d0)]
-      (curate/rename-image f0 d1))))
+;;(let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
+(doseq [drive ["f:/" "g:/" "y:/" "z:/"]]
+  (doseq [dir ["Pictures" "photo"]]
+    (let [d0 (io/file drive dir)
+          d1 (io/file "e:/" "pic")]
+      (doseq [f0 (curate/image-file-seq d0)]
+        (curate/rename-image f0 d1)))))
 ;;----------------------------------------------------------------
