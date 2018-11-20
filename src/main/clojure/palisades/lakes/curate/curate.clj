@@ -413,24 +413,20 @@
   ([^File f0 ^File d ^String version]
     (let [^File f1 (new-path f0 d version)]
       ;; no new path if image file not parsable 
+      (println (unix-path f0))
       (when f1
+        (println (unix-path f1))
         (if-not (.exists f1)
           (do 
-            #_(println "copy:")
-            #_(println (unix-path f0))
-            #_(println (unix-path f1))
             (io/make-parents f1)
             (io/copy f0 f1))
           (if-not (identical-contents? f0 f1)
             (do
               (println "similar:")
-              (println (.getPath f0))
-              (println (.getPath f1))
               (recur f0 d (increment-version version)))
             (do
-              (println "identical:")
-              (println (.getPath f0))
-              (println (.getPath f1))))))))
+              (println "identical:")))))))
   ([^File f0 ^File d]
+    (println)
     (rename-image f0 d nil)))
 ;;----------------------------------------------------------------
