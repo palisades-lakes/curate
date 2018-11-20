@@ -27,6 +27,11 @@
            [com.drew.metadata Directory Metadata Tag]
            [com.drew.metadata.exif
             ExifIFD0Directory ExifSubIFDDirectory]))
+
+;; TODO: force exif keys to lower case, other standardization
+;; TODO: detect and label DXO processed files, 
+;; other image software
+
 ;;----------------------------------------------------------------
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
@@ -177,6 +182,9 @@
         (println date))
     (pp/pprint exif)))
 ;;----------------------------------------------------------------
+(defn format-image-metadata ^String [^File f]
+  (with-out-str (print-image-metadata f)))
+;;----------------------------------------------------------------
 ;; datetimes
 ;;----------------------------------------------------------------
 (def ^:private datetime-regex #"((?i)date)|((?i)time)")
@@ -281,9 +289,43 @@
 (defn- starts-with?  [^String s ^String prefix]
   "null safe."
   (when (and s prefix) (.startsWith s prefix)))
+(defn ends-with?  [^String s ^String suffix]
+  "null safe."
+  (when (and s suffix) (.endWith s suffix)))
 (defn- lower-case ^String  [^String s]
   "null safe."
   (when s (s/lower-case s)))
+;;----------------------------------------------------------------
+(defn image-file-width ^long [^File f]
+  (try
+    (let [exif (exif/exif-for-file f)
+          s (or (get exif "Image Width")
+                (get exif "Exif Image Width"))
+          [n units] (s/split s #"\s")]
+      (when units (assert (= units "pixels")))
+      (Long/parseLong n))
+    (catch Throwable t
+      (println "ERROR:" (unix-path f))
+      (print-image-metadata f)
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+(defn image-file-height ^long [^File f]
+  (try
+    (let [exif (exif/exif-for-file f)
+          s (or (get exif "Image Height")
+                (get exif "Exif Image Height"))
+          [n units] (s/split s #"\s")]
+      (when units (assert (= units "pixels")))
+      (Long/parseLong n))
+    (catch Throwable t
+      (println "ERROR:" (unix-path f))
+      (print-image-metadata f)
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      (throw t))))
+;;----------------------------------------------------------------
+(defn image-file-wxh ^String [^File f]
+  (str (image-file-width f) "x" (image-file-height f)))
 ;;----------------------------------------------------------------
 (defn image-file-make ^String [^File f]
   (try
@@ -387,12 +429,15 @@
             ^String ext (file-type f)
             ^String suffix (or (image-file-camera f)
                                (file-prefix f))
+            ^String wxh (image-file-wxh f)
             ^String fname (if-not (empty? suffix)
                             (str prefix "-" suffix)
                             prefix)
+            ^String fname (str fname "-" wxh)
+            
             ^String fname (if-not (empty? version)
-                            (str fname "-" version)
-                            fname)
+(str fname "-" version)
+fname)
             ^File new-file (io/file 
                              d year month 
                              (str fname "." ext))]
