@@ -331,7 +331,8 @@
   (try
     (let [exif (exif/exif-for-file f)
           make (replace (lower-case (get exif "Make")) " " "")
-          make (if (starts-with? make "nikon") "nikon" make)]
+          make (if (starts-with? make "nikon") "nikon" make)
+          make (if (starts-with? make "pentax") "pentax" make)]
       (when (nil? make)
         (println)
         (println 
@@ -348,7 +349,8 @@
   (try
     (let [exif (exif/exif-for-file f)
           model (replace (lower-case (get exif "Model")) " " "")
-          ^String model (replace model #"[ \-]+" "")]
+          ^String model (replace model #"[ \-]+" "")
+          ^String model (replace model "*" "")]
       (when (nil? model)
         (println)
         (println 
@@ -367,7 +369,8 @@
           ^String model (image-file-model f)
           ^String make (if (starts-with? model "hp") "" make)
           ^String model (replace model make "")
-          make-model (str make model)]
+          make-model (str make model)
+          make-model (replace make-model "pentaxpentax" "pentax")]
       (when (empty? make-model)
         (println)
         (println 
