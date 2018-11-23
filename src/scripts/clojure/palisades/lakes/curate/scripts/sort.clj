@@ -14,10 +14,14 @@
 ;; TODO: search all drives?
 ;;(let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
 ;;(doseq [drive ["f:/" "g:/" "y:/" "z:/"]]
-(doseq [drive ["h:/" "e:/" "f:/" "g:/" "y:/" "z:/"]]
-  (with-open [w (io/writer (str "sort-" (get drive 0) ".txt"))]
+(doseq [drive ["z" "l" "m"
+               ;;"e" "f" "g" "h" "j" "k" "y"
+               ]]
+  (with-open [w (io/writer (str "sort-" drive ".txt"))]
     (binding [*out* w]
-      (doseq [dir [
+      (doseq [dir ["desktops"
+                   "exif"
+                   "photo-2014-04"
                    "porta/Pictures" 
                    "porta/Pictures-Tamaki" 
                    "porta/photo"
@@ -32,7 +36,7 @@
                    "Pictures-Tamaki" 
                    "photo"
                    ]]
-        (let [d0 (io/file drive dir)
+        (let [d0 (io/file (str drive ";/") dir)
               d1 (io/file "e:/" "pic")]
           (when (.exists d0)
             (doseq [f0 (curate/image-file-seq d0)]

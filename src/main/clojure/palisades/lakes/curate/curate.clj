@@ -291,7 +291,7 @@
   (when (and s prefix) (.startsWith s prefix)))
 (defn ends-with?  [^String s ^String suffix]
   "null safe."
-  (when (and s suffix) (.endWith s suffix)))
+  (when (and s suffix) (.endsWith s suffix)))
 (defn- lower-case ^String  [^String s]
   "null safe."
   (when s (s/lower-case s)))
@@ -471,15 +471,15 @@
               (io/copy f0 f1))
             (if-not (identical-contents? f0 f1)
               (do
-                (println "similar:")
-                (recur f0 d (increment-version version)))
+                (println "similar")
+                (rename-image f0 d (increment-version version)))
               (do
-                (println "identical:")))))))
-    (catch Throwable t
-      (println "ERROR:" (unix-path f0))
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      #_(throw t)
-      nil))
+                (println "identical"))))))
+      (catch Throwable t
+        (println "ERROR:" (unix-path f0))
+        (binding [*err* *out*] (stacktrace/print-cause-trace t))
+        #_(throw t)
+        nil)))
   ([^File f0 ^File d]
     (println)
     (rename-image f0 d nil)))
