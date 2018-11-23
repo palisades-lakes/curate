@@ -36,7 +36,7 @@
                    "Pictures-Tamaki" 
                    "photo"
                    ]]
-        (let [d0 (io/file (str drive ";/") dir)
+        (let [d0 (io/file (str drive ":/") dir)
               d1 (io/file "e:/" "pic")]
           (when (.exists d0)
             (doseq [f0 (curate/image-file-seq d0)]
