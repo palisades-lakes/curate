@@ -7,7 +7,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-19"}
+   :version "2018-11-22"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -439,8 +439,8 @@
             ^String fname (str fname "-" wxh)
             
             ^String fname (if-not (empty? version)
-(str fname "-" version)
-fname)
+                            (str fname "-" version)
+                            fname)
             ^File new-file (io/file 
                              d year month 
                              (str fname "." ext))]
@@ -459,21 +459,27 @@ fname)
 ;;----------------------------------------------------------------
 (defn rename-image 
   ([^File f0 ^File d ^String version]
-    (let [^File f1 (new-path f0 d version)]
-      ;; no new path if image file not parsable 
-      (println (unix-path f0))
-      (when f1
-        (println (unix-path f1))
-        (if-not (.exists f1)
-          (do 
-            (io/make-parents f1)
-            (io/copy f0 f1))
-          (if-not (identical-contents? f0 f1)
-            (do
-              (println "similar:")
-              (recur f0 d (increment-version version)))
-            (do
-              (println "identical:")))))))
+    (try
+      (let [^File f1 (new-path f0 d version)]
+        ;; no new path if image file not parsable 
+        (println (unix-path f0))
+        (when f1
+          (println (unix-path f1))
+          (if-not (.exists f1)
+            (do 
+              (io/make-parents f1)
+              (io/copy f0 f1))
+            (if-not (identical-contents? f0 f1)
+              (do
+                (println "similar:")
+                (recur f0 d (increment-version version)))
+              (do
+                (println "identical:")))))))
+    (catch Throwable t
+      (println "ERROR:" (unix-path f0))
+      (binding [*err* *out*] (stacktrace/print-cause-trace t))
+      #_(throw t)
+      nil))
   ([^File f0 ^File d]
     (println)
     (rename-image f0 d nil)))
