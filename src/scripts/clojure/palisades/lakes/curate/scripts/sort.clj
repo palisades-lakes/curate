@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-22"}
+   :version "2018-11-24"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -14,7 +14,8 @@
 ;; TODO: search all drives?
 ;;(let [drive (if (.exists (io/file "e:/")) "e:/" "s:/")
 ;;(doseq [drive ["f:/" "g:/" "y:/" "z:/"]]
-(doseq [drive ["z" "l" "m"
+(doseq [drive ["n" 
+               ;;"z" "l" "m"
                ;;"e" "f" "g" "h" "j" "k" "y"
                ]]
   (with-open [w (io/writer (str "sort-" drive ".txt"))]
