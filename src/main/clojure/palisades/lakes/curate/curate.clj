@@ -7,7 +7,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-22"}
+   :version "2018-11-29"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -15,6 +15,8 @@
             [clojure.pprint :as pp]
             [clojure.java.io :as io]
             [clojure.stacktrace :as stacktrace]
+            ;; exif processor overwrites data when more than one 
+            ;; directory has the same tag
             [exif-processor.core :as exif])
   (:import [java.io File FileInputStream]
            [java.nio.file Files LinkOption]
