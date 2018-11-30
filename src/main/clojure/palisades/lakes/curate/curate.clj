@@ -1,4 +1,3 @@
-;;----------------------------------------------------------------
 ;; exif-processor has reflection and boxing warnings
 (set! *warn-on-reflection* false)
 (set! *unchecked-math* false)
@@ -17,14 +16,14 @@
             [clojure.stacktrace :as stacktrace]
             ;; exif processor overwrites data when more than one 
             ;; directory has the same tag
-            [exif-processor.core :as exif])
+            #_[exif-processor.core :as exif])
   (:import [java.io File FileInputStream]
            [java.nio.file Files LinkOption]
            [java.nio.file.attribute FileTime]
            [java.security DigestInputStream MessageDigest]
            [java.time LocalDateTime ZoneOffset]
            [java.time.format DateTimeFormatter]
-           [java.util Arrays Map]
+           [java.util Arrays Collections LinkedHashMap Map]
            [com.drew.imaging ImageMetadataReader]
            [com.drew.metadata Directory Metadata Tag]
            [com.drew.metadata.exif
@@ -40,19 +39,19 @@
 ;;----------------------------------------------------------------
 ;; image files
 ;;----------------------------------------------------------------
-(defn unix-path 
+(defn- unix-path 
   "return a unix style pathname string."
   ^String [^File f]
   (s/replace (.getPath f) "\\" "/"))
 ;;----------------------------------------------------------------
-(defn file-prefix ^String [^File f]
+(defn- file-prefix ^String [^File f]
   (let [filename (.getName f)
         i (s/last-index-of filename ".")]
     (if (nil? i)
       filename
       (s/lower-case (subs filename 0 i)))))
 ;;----------------------------------------------------------------
-(defn file-type ^String [^File f]
+(defn- file-type ^String [^File f]
   (let [filename (.getName f)
         i (s/last-index-of filename ".")
         ^String ext (if (nil? i)
@@ -105,7 +104,7 @@
       "webp"
       "x3f" ;; Sigma
       })
-(def image-file-type?
+(def ^:private image-file-type?
   #{"3fr" ;; Hasselblad
     #_"3g2" 
     #_"3gp"
@@ -149,93 +148,108 @@
     "x3f" ;; Sigma
     })
 ;;----------------------------------------------------------------
-(defn image-file? [^File f] (image-file-type? (file-type f)))
+(defn- image-file? [^File f] (image-file-type? (file-type f)))
 ;;----------------------------------------------------------------
-(defn image-file-seq [^File d]
+(defn image-file-seq 
+  
+  "Return a <code>seq</code> of all the files, in any folder under 
+   <code>d</code>, that are accepted by 
+   <code>image-file?</code>., which at present is just a set of 
+   known image file endings."
+  
+  [^File d]
+  
   (assert (.exists d) (.getPath d))
   (filter image-file? (file-seq d)))
 ;;----------------------------------------------------------------
 ;; image metadata
 ;;----------------------------------------------------------------
-(defn print-image-metadata [^File f]
-  (let [;;^Metadata m 
-        #_(try (ImageMetadataReader/readMetadata f)
-            (catch Throwable t
-              (binding [*err* *out*]
-                (stacktrace/print-cause-trace t))
-              (throw t)))
-        ;;^Iterable ds (.getDirectories m)
-        exif (exif/exif-for-file f)]
-    #_(doseq [^Directory d (seq ds)]
-        #_(println)
-        #_(println ".....................................")
-        (println "..." (class d) (.getName d) (.getTagCount d))
-        (doseq [^Tag tag (.getTags d)]
-          (println 
-            (.getTagName tag) ":" (.getDescription tag)
-            (str "[" (.getDirectoryName tag) " " 
-                 (.getTagTypeHex tag) "]"))
-          
-          #_(println (.toString tag))))
-    #_(let [^ExifSubIFDDirectory d 
-            (.getFirstDirectoryOfType m ExifSubIFDDirectory)
-            date 
-            (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
-        (println date))
-    (pp/pprint exif)))
+(defn- log-error [^Map exif ^File f ^Throwable t]
+  (println "ERROR:" (unix-path f))
+  (pp/pprint exif)
+  (binding [*err* *out*] (stacktrace/print-cause-trace t))
+  (throw t))
 ;;----------------------------------------------------------------
-(defn format-image-metadata ^String [^File f]
-  (with-out-str (print-image-metadata f)))
+(defn- directory-map ^Map [^Directory d]
+  (into {}
+        (map (fn [^Tag t] [(.getTagName t) (.getDescription t)])
+             (.getTags d))))
+;;----------------------------------------------------------------
+(defn- exif-maps
+  
+  "Return the image meta data as a map from <code>Directory</code>
+   to a <code>Map</code> of tag-value pairs.
+   I am ignoring the parent-child relation among exif directories,
+   (for now), because metadata-extractor ignores it as well."
+  
+  ^Map [^File f]
+  
+  (let [^Metadata m (try (ImageMetadataReader/readMetadata f)
+                      (catch Throwable t 
+                        (log-error nil f t)))
+        ^Map lhm (LinkedHashMap.)]
+    ;; preserve iteration order, so later looks can give 
+    ;; priority to first occurence of a tag.
+    ;; ? might not be a goodf idea
+    (doseq [^Directory d (.getDirectories m)]
+      (.put lhm d (directory-map d)))
+    (Collections/unmodifiableMap lhm)))
+;;----------------------------------------------------------------
+(defn print-exif [^File f]
+  (pp/pprint (exif-maps f)))
+;;----------------------------------------------------------------
+(defn format-exif ^String [^File f]
+  (with-out-str (print-exif f)))
 ;;----------------------------------------------------------------
 ;; datetimes
 ;;----------------------------------------------------------------
 (def ^:private datetime-regex #"((?i)date)|((?i)time)")
 (defn- dt-string? [^String s] (re-find datetime-regex s))
 ;;----------------------------------------------------------------
-(defn exif-map-datetimes ^Map [^Map exif]
-  (into (sorted-map) (filter #(dt-string? (key %))) exif))
+#_(defn exif-map-datetimes ^Map [^Map metadata]
+    (into (sorted-map) (filter #(dt-string? (key %))) exif))
 ;;----------------------------------------------------------------
-(defn print-exif-map-datetimes [^Map exif]
-  (pp/pprint (exif-map-datetimes exif)))
+#_(defn print-exif-map-datetimes [^Map exif]
+    (pp/pprint (exif-map-datetimes exif)))
 ;;----------------------------------------------------------------
-(defn- directory-has-datetimes? [^Directory d]
-  (loop [tags (seq (.getTags d))]
-    (if (empty? tags)
-      false
-      (let [^Tag tag (first tags)]
-        (if (dt-string? (.getTagName tag))
-          true
-          (recur (rest tags)))))))
+#_(defn- directory-has-datetimes? [^Directory d]
+    (loop [tags (seq (.getTags d))]
+      (if (empty? tags)
+        false
+        (let [^Tag tag (first tags)]
+          (if (dt-string? (.getTagName tag))
+            true
+            (recur (rest tags)))))))
 ;;----------------------------------------------------------------
-(defn print-image-metadata-datetimes [^File f]
-  (let [^Metadata m 
-        (try (ImageMetadataReader/readMetadata f)
-          (catch Throwable t
-            (binding [*err* *out*]
-              (stacktrace/print-cause-trace t))
-            (throw t)))
-        ^Iterable ds (.getDirectories m)
-        exif (exif-map-datetimes (exif/exif-for-file f))]
-    (doseq [^Directory d (seq ds)]
-      (when (directory-has-datetimes? d)
-        #_(println "----------------------------------------")
-        (println (class d) (.getName d) (.getTagCount d))
-        (doseq [^Tag tag (.getTags d)]
-          (when (dt-string? (.getTagName tag))
-            (println (.getTagTypeHex tag) (.getTagName tag) 
-                     ":" (.getDescription tag))
-            (println (.toString tag)))))
-      #_(let [^ExifSubIFDDirectory d 
-              (.getFirstDirectoryOfType m ExifSubIFDDirectory)
-              date 
-              (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
-          (println date)))
-    (when-not (empty? exif) (pp/pprint exif))))
+#_(defn print-exif-datetimes [^File f]
+    (let [^Metadata m 
+          (try (ImageMetadataReader/readMetadata f)
+            (catch Throwable t
+              (binding [*err* *out*]
+                (stacktrace/print-cause-trace t))
+              (throw t)))
+          ^Iterable ds (.getDirectories m)
+          exif (exif-map-datetimes (exif-maps f))]
+      (doseq [^Directory d (seq ds)]
+        (when (directory-has-datetimes? d)
+          #_(println "----------------------------------------")
+          (println (class d) (.getName d) (.getTagCount d))
+          (doseq [^Tag tag (.getTags d)]
+            (when (dt-string? (.getTagName tag))
+              (println (.getTagTypeHex tag) (.getTagName tag) 
+                       ":" (.getDescription tag))
+              (println (.toString tag)))))
+        #_(let [^ExifSubIFDDirectory d 
+                (.getFirstDirectoryOfType m ExifSubIFDDirectory)
+                date 
+                (.getDate d ExifSubIFDDirectory/TAG_DATETIME_ORIGINAL)]
+            (println date)))
+      (when-not (empty? exif) (pp/pprint exif))))
 ;;----------------------------------------------------------------
 (def ^:private arw-format 
   (DateTimeFormatter/ofPattern "yyyy:MM:dd HH:mm:ss"))
 (defn- parse-datetime ^LocalDateTime [^String s]
-  (LocalDateTime/parse s arw-format))
+  (when s (LocalDateTime/parse s arw-format)))
 (def ^:private file-prefix-format 
   (DateTimeFormatter/ofPattern "yyyyMMdd-HHmmss"))
 (def ^:private year-format 
@@ -243,16 +257,10 @@
 (def ^:private month-format 
   (DateTimeFormatter/ofPattern "MM"))
 ;;----------------------------------------------------------------
-(defn exif-datetime ^LocalDateTime [^File f ^Map exif]
-  (if-not exif
-    nil
-    (let [dts (get exif "Date/Time")]
-      (if dts 
-        (parse-datetime dts)
-        #_(do 
-            (println "no Date/Time:" (unix-path f))
-            (print-image-metadata-datetimes f)
-            (println))))))
+(defn- get-all ^Iterable [^Map exif ^String k]
+  (keep #(get % k) (vals exif)))
+(defn- get-first ^String [^Map exif ^String k]
+  (first (get-all exif k)))
 ;;----------------------------------------------------------------
 (defn file-attributes ^Map [^File f]
   (Files/readAttributes
@@ -265,22 +273,22 @@
     (.toInstant ft) 
     ZoneOffset/UTC))
 ;;----------------------------------------------------------------
-(defn image-file-datetime ^LocalDateTime [^File f]
-  (try
-    (let [exif (exif/exif-for-file f)
-          ldt (if (empty? exif)
-                (println "no exif:" (unix-path f))
-                (exif-datetime f exif))]
-      (if (nil? ldt)
-        (let [attributes (file-attributes f)
-              filetime (or (.get attributes "lastModifiedTime")
-                           (.get attributes "creationTime"))]
-          (filetime-to-localdatetime filetime))
-        ldt))
-    (catch Throwable t
-      (println "ERROR:" (unix-path f))
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+(defn- exif-datetime 
+  (^LocalDateTime [^Map exif]
+    (when-not (empty? exif)
+      (parse-datetime (get-first exif "Date/Time"))))
+  (^LocalDateTime [^Map exif ^File f]
+    (try
+      (let [ldt (if (empty? exif)
+                  (println "no exif:" (unix-path f))
+                  (exif-datetime exif))]
+        (if (nil? ldt)
+          (let [attributes (file-attributes f)
+                filetime (or (.get attributes "lastModifiedTime")
+                             (.get attributes "creationTime"))]
+            (filetime-to-localdatetime filetime))
+          ldt))
+      (catch Throwable t (log-error exif f t)))))
 ;;----------------------------------------------------------------
 ;; camera make/model
 ;;----------------------------------------------------------------
@@ -298,41 +306,33 @@
   "null safe."
   (when s (s/lower-case s)))
 ;;----------------------------------------------------------------
-(defn image-file-width ^long [^File f]
+(defn exif-width ^long [^Map exif ^File f]
   (try
-    (let [exif (exif/exif-for-file f)
-          s (or (get exif "Image Width")
-                (get exif "Exif Image Width"))
+    (let [exif (exif-maps f)
+          s (or (get-first exif "Image Width")
+                (get-first exif "Exif Image Width"))
           [n units] (s/split s #"\s")]
       (when units (assert (= units "pixels")))
       (Long/parseLong n))
-    (catch Throwable t
-      (println "ERROR:" (unix-path f))
-      (print-image-metadata f)
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+    (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn image-file-height ^long [^File f]
+(defn exif-height ^long [^Map exif ^File f]
   (try
-    (let [exif (exif/exif-for-file f)
-          s (or (get exif "Image Height")
-                (get exif "Exif Image Height"))
+    (let [s (or (get-first exif "Image Height")
+                (get-first exif "Exif Image Height"))
           [n units] (s/split s #"\s")]
       (when units (assert (= units "pixels")))
       (Long/parseLong n))
-    (catch Throwable t
-      (println "ERROR:" (unix-path f))
-      (print-image-metadata f)
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+    (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn image-file-wxh ^String [^File f]
-  (str (image-file-width f) "x" (image-file-height f)))
+(defn exif-wxh ^String [^Map exif ^File f]
+  (str (exif-width exif f) "x" (exif-height exif f)))
 ;;----------------------------------------------------------------
-(defn image-file-make ^String [^File f]
+(defn exif-make ^String [^Map exif ^File f]
   (try
-    (let [exif (exif/exif-for-file f)
-          make (replace (lower-case (get exif "Make")) " " "")
+    (let [exif (exif-maps f)
+          make (replace (lower-case (get-first exif "Make")) 
+                        " " "")
           make (if (starts-with? make "nikon") "nikon" make)
           make (if (starts-with? make "pentax") "pentax" make)]
       (when (nil? make)
@@ -340,17 +340,14 @@
         (println 
           "-----------------------------------------------------")
         (println "no exif make:" (unix-path f))
-        (print-image-metadata f))
+        (pp/pprint exif))
       make)
-    (catch Throwable t
-      (println "error:" (unix-path f))
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+    (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn image-file-model ^String [^File f]
+(defn exif-model ^String [^Map exif ^File f]
   (try
-    (let [exif (exif/exif-for-file f)
-          model (replace (lower-case (get exif "Model")) " " "")
+    (let [model (replace (lower-case (get-first exif "Model"))
+                         " " "")
           ^String model (replace model #"[ \-]+" "")
           ^String model (replace model "*" "")]
       (when (nil? model)
@@ -358,17 +355,14 @@
         (println 
           "-----------------------------------------------------")
         (println "no exif model:" (unix-path f))
-        (print-image-metadata f))
+        (pp/pprint exif))
       model)
-    (catch Throwable t
-      (println "error:" (unix-path f))
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+    (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn image-file-camera ^String [^File f]
+(defn- exif-camera ^String [^Map exif ^File f]
   (try
-    (let [^String make (image-file-make f)
-          ^String model (image-file-model f)
+    (let [^String make (exif-make exif)
+          ^String model (exif-model exif)
           ^String make (if (starts-with? model "hp") "" make)
           ^String model (replace model make "")
           make-model (str make model)
@@ -378,12 +372,15 @@
         (println 
           "-----------------------------------------------------")
         (println "no exif make-model" (unix-path f))
-        (print-image-metadata f))
+        (pp/pprint exif))
       make-model)
-    (catch Throwable t
-      (println "error:" (unix-path f))
-      (binding [*err* *out*] (stacktrace/print-cause-trace t))
-      (throw t))))
+    (catch Throwable t (log-error exif f t))))
+;;----------------------------------------------------------------
+(defn exif-software 
+  ([^Map exif ^File f]
+  (try (get-all exif "Software")
+    (catch Throwable t (log-error exif f t))))
+  ([^File f] (exif-software (exif-maps f) f)))
 ;;----------------------------------------------------------------
 ;; file equality
 ;;----------------------------------------------------------------
@@ -424,17 +421,18 @@
 ;;----------------------------------------------------------------
 ;; renaming
 ;;----------------------------------------------------------------
-(defn new-path 
+(defn- new-path 
   (^File [^File f ^File d ^String version]
     (try
-      (let [^LocalDateTime ldt (image-file-datetime f)
+      (let [^Map exif (exif-maps f)
+            ^LocalDateTime ldt (exif-datetime exif f)
             ^String year (format "%04d" (.getYear ldt))
             ^String month (format "%02d" (.getMonthValue ldt))
             ^String prefix (.format ldt file-prefix-format)
             ^String ext (file-type f)
-            ^String suffix (or (image-file-camera f)
+            ^String suffix (or (exif-camera exif f)
                                (file-prefix f))
-            ^String wxh (image-file-wxh f)
+            ^String wxh (exif-wxh exif f)
             ^String fname (if-not (empty? suffix)
                             (str prefix "-" suffix)
                             prefix)
@@ -447,11 +445,7 @@
                              d year month 
                              (str fname "." ext))]
         new-file)
-      (catch Throwable t
-        (println "ERROR:" (unix-path f))
-        (binding [*err* *out*] (stacktrace/print-cause-trace t))
-        #_(throw t)
-        nil)))
+      (catch Throwable t (log-error (exif-maps f) f t))))
   (^File [^File f ^File d] (new-path f d nil)))
 ;;----------------------------------------------------------------
 (defn- increment-version ^String [^String version]
@@ -477,11 +471,7 @@
                 (rename-image f0 d (increment-version version)))
               (do
                 (println "identical"))))))
-      (catch Throwable t
-        (println "ERROR:" (unix-path f0))
-        (binding [*err* *out*] (stacktrace/print-cause-trace t))
-        #_(throw t)
-        nil)))
+      (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d]
     (println)
     (rename-image f0 d nil)))
