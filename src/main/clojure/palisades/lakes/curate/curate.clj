@@ -1,12 +1,14 @@
+(set! *warn-on-reflection* true)
+(set! *unchecked-math* :warn-on-boxed)
 ;; exif-processor has reflection and boxing warnings
-(set! *warn-on-reflection* false)
-(set! *unchecked-math* false)
+;(set! *warn-on-reflection* false)
+;(set! *unchecked-math* false)
 ;;----------------------------------------------------------------
 (ns palisades.lakes.curate.curate
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-29"}
+   :version "2018-11-30"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -26,16 +28,15 @@
            [java.util Arrays Collections LinkedHashMap Map]
            [com.drew.imaging ImageMetadataReader]
            [com.drew.metadata Directory Metadata Tag]
-           [com.drew.metadata.exif
-            ExifIFD0Directory ExifSubIFDDirectory]))
+           #_[com.drew.metadata.exif
+              ExifIFD0Directory ExifSubIFDDirectory]))
 
 ;; TODO: force exif keys to lower case, other standardization
 ;; TODO: detect and label DXO processed files, 
 ;; other image software
-
 ;;----------------------------------------------------------------
-(set! *warn-on-reflection* true)
-(set! *unchecked-math* :warn-on-boxed)
+;(set! *warn-on-reflection* true)
+;(set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
 ;; image files
 ;;----------------------------------------------------------------
@@ -262,18 +263,18 @@
 (defn- get-first ^String [^Map exif ^String k]
   (first (get-all exif k)))
 ;;----------------------------------------------------------------
-(defn file-attributes ^Map [^File f]
-  (Files/readAttributes
-    (.toPath f) 
-    "*" 
-    ^"[Ljava.nio.file.LinkOption;" (make-array LinkOption 0)))
+#_(defn file-attributes ^Map [^File f]
+   (Files/readAttributes
+     (.toPath f) 
+     "*" 
+     ^"[Ljava.nio.file.LinkOption;" (make-array LinkOption 0)))
 ;;----------------------------------------------------------------
-(defn- filetime-to-localdatetime ^LocalDateTime [^FileTime ft]
-  (LocalDateTime/ofInstant 
-    (.toInstant ft) 
-    ZoneOffset/UTC))
+#_(defn- filetime-to-localdatetime ^LocalDateTime [^FileTime ft]
+   (LocalDateTime/ofInstant 
+     (.toInstant ft) 
+     ZoneOffset/UTC))
 ;;----------------------------------------------------------------
-(defn- exif-datetime 
+#_(defn- exif-datetime 
   (^LocalDateTime [^Map exif]
     (when-not (empty? exif)
       (parse-datetime (get-first exif "Date/Time"))))
@@ -284,10 +285,17 @@
                   (exif-datetime exif))]
         (if (nil? ldt)
           (let [attributes (file-attributes f)
-                filetime (or (.get attributes "lastModifiedTime")
-                             (.get attributes "creationTime"))]
+                filetime (or (.get attributes "creationTime")
+                             (.get attributes "lastModifiedTime")
+                             )]
             (filetime-to-localdatetime filetime))
           ldt))
+      (catch Throwable t (log-error exif f t)))))
+(defn- exif-datetime 
+  (^LocalDateTime [^Map exif ^File f]
+    (try
+      (when-not (empty? exif)
+      (parse-datetime (get-first exif "Date/Time")))
       (catch Throwable t (log-error exif f t)))))
 ;;----------------------------------------------------------------
 ;; camera make/model
@@ -306,29 +314,31 @@
   "null safe."
   (when s (s/lower-case s)))
 ;;----------------------------------------------------------------
-(defn exif-width ^long [^Map exif ^File f]
+(defn- exif-width ^long [^Map exif ^File f]
   (try
     (let [exif (exif-maps f)
-          s (or (get-first exif "Image Width")
-                (get-first exif "Exif Image Width"))
+          s (or (get-first exif "Exif Image Width")
+                (get-first exif "Image Width"))
           [n units] (s/split s #"\s")]
       (when units (assert (= units "pixels")))
       (Long/parseLong n))
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn exif-height ^long [^Map exif ^File f]
+(defn- exif-height ^long [^Map exif ^File f]
   (try
-    (let [s (or (get-first exif "Image Height")
-                (get-first exif "Exif Image Height"))
+    (let [s (or (get-first exif "Exif Image Height")
+                (get-first exif "Image Height"))
           [n units] (s/split s #"\s")]
       (when units (assert (= units "pixels")))
       (Long/parseLong n))
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn exif-wxh ^String [^Map exif ^File f]
-  (str (exif-width exif f) "x" (exif-height exif f)))
+(defn exif-wxh 
+  (^String [^Map exif ^File f]
+    (str (exif-width exif f) "x" (exif-height exif f)))
+  (^String [^File f] (exif-wxh (exif-maps f) f)))
 ;;----------------------------------------------------------------
-(defn exif-make ^String [^Map exif ^File f]
+(defn- exif-make ^String [^Map exif ^File f]
   (try
     (let [exif (exif-maps f)
           make (replace (lower-case (get-first exif "Make")) 
@@ -344,7 +354,7 @@
       make)
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn exif-model ^String [^Map exif ^File f]
+(defn- exif-model ^String [^Map exif ^File f]
   (try
     (let [model (replace (lower-case (get-first exif "Model"))
                          " " "")
@@ -359,28 +369,59 @@
       model)
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
-(defn- exif-camera ^String [^Map exif ^File f]
-  (try
-    (let [^String make (exif-make exif)
-          ^String model (exif-model exif)
-          ^String make (if (starts-with? model "hp") "" make)
-          ^String model (replace model make "")
-          make-model (str make model)
-          make-model (replace make-model "pentaxpentax" "pentax")]
-      (when (empty? make-model)
-        (println)
-        (println 
-          "-----------------------------------------------------")
-        (println "no exif make-model" (unix-path f))
-        (pp/pprint exif))
-      make-model)
-    (catch Throwable t (log-error exif f t))))
+(defn exif-camera 
+  (^String [^Map exif ^File f]
+    (try
+      (let [^String make (exif-make exif f)
+            ^String model (exif-model exif f)
+            ^String make (if (starts-with? model "hp") "" make)
+            ^String model (replace model make "")
+            make-model (str make model)
+            make-model (replace make-model "pentaxpentax" "pentax")]
+        (when (empty? make-model)
+          (println)
+          (println 
+            "-----------------------------------------------------")
+          (println "no exif make-model" (unix-path f))
+          (pp/pprint exif))
+        make-model)
+      (catch Throwable t (log-error exif f t))))
+  (^String [^File f] (exif-camera (exif-maps f) f)))
 ;;----------------------------------------------------------------
 (defn exif-software 
-  ([^Map exif ^File f]
-  (try (get-all exif "Software")
-    (catch Throwable t (log-error exif f t))))
-  ([^File f] (exif-software (exif-maps f) f)))
+  (^String [^Map exif ^File f]
+    (try (get-all exif "Software")
+      (catch Throwable t (log-error exif f t))))
+  (^String [^File f] (exif-software (exif-maps f) f)))
+;;----------------------------------------------------------------
+;; separate camera originals from processed images
+;;  pairs : [keystring folder]
+;; Search for match terminates with 1st success, so order matters
+(def ^:private processors
+  [["Adobe" "adobe"]
+   ["DxO" "dxo"]
+   ["Image Data" "sony"]
+   ["Microsoft" "microsoft"]
+   ["Nikon Transfer" "nikon"]
+   ["Picasa" "google"]
+   ["Photos 1.5" "apple"]
+   ["PMB" "sony"]
+   ["Roxio" "roxio"]
+   ["Skitch" "skitch"]
+   ["ViewNX" "nikon"]])
+(defn exif-processor 
+  (^String [^Map exif ^File f]
+    (try 
+      (let [^String software (first (exif-software exif f))
+            processor (when-not (empty? software)
+                        (first 
+                          (keep 
+                            (fn [[^String k ^String v]] 
+                              (when (.contains software k) v))
+                            processors)))]
+        (or processor "original")) 
+      (catch Throwable t (log-error exif f t))))
+  (^String [^File f] (exif-processor (exif-maps f) f)))
 ;;----------------------------------------------------------------
 ;; file equality
 ;;----------------------------------------------------------------
@@ -393,7 +434,7 @@
       (while (not= -1 (.read stream buf 0 nbytes)))
       (apply str (map (partial format "%02x") (.digest digest)))))
 ;;----------------------------------------------------------------
-(defn identical-contents? [^File f0 ^File f1]
+(defn- identical-contents? [^File f0 ^File f1]
   (let [i0 (FileInputStream. f0)
         i1 (FileInputStream. f1)
         n (* 1024 1024)
@@ -403,21 +444,9 @@
       (let [n0 (.read i0 b0 0 n)
             n1 (.read i1 b1 0 n)]
         (cond 
-          (== -1 n0 n1) 
-          (do 
-            #_(println "identical:")
-            #_(println (unix-path f0))
-            #_(println (unix-path f1))
-            true)
+          (== -1 n0 n1) true
           (and (== n0 n1) (Arrays/equals b0 b1)) (recur)
-          :else 
-          (do 
-            #_(println "not identical:")
-            #_(println (unix-path f0))
-            #_(print-image-metadata f0)
-            #_(println (unix-path f1)) 
-            #_(print-image-metadata f1)
-            false))))))
+          :else false)))))
 ;;----------------------------------------------------------------
 ;; renaming
 ;;----------------------------------------------------------------
@@ -426,9 +455,15 @@
     (try
       (let [^Map exif (exif-maps f)
             ^LocalDateTime ldt (exif-datetime exif f)
-            ^String year (format "%04d" (.getYear ldt))
-            ^String month (format "%02d" (.getMonthValue ldt))
-            ^String prefix (.format ldt file-prefix-format)
+            ^String year (if ldt
+                           (format "%04d" (.getYear ldt))
+                           "none")
+            ^String month (if ldt
+                            (format "%02d" (.getMonthValue ldt))
+                            "no")
+            ^String prefix (if ldt
+                             (.format ldt file-prefix-format)
+                             (file-prefix f))
             ^String ext (file-type f)
             ^String suffix (or (exif-camera exif f)
                                (file-prefix f))
@@ -441,8 +476,12 @@
             ^String fname (if-not (empty? version)
                             (str fname "-" version)
                             fname)
+            ^String processor (exif-processor exif f)
+            ^String fname (if-not (.equals "original" processor)
+                            (str fname "-" processor)
+                            fname)
             ^File new-file (io/file 
-                             d year month 
+                             d processor year month
                              (str fname "." ext))]
         new-file)
       (catch Throwable t (log-error (exif-maps f) f t))))
@@ -458,19 +497,19 @@
     (try
       (let [^File f1 (new-path f0 d version)]
         ;; no new path if image file not parsable 
-        (println (unix-path f0))
+        #_(println (unix-path f0))
         (when f1
-          (println (unix-path f1))
+          #_(println (unix-path f1))
           (if-not (.exists f1)
             (do 
               (io/make-parents f1)
               (io/copy f0 f1))
-            (if-not (identical-contents? f0 f1)
-              (do
-                (println "similar")
-                (rename-image f0 d (increment-version version)))
-              (do
-                (println "identical"))))))
+            (when-not (identical-contents? f0 f1)
+              (println "similar")
+              (println (unix-path f0))
+              (println (unix-path f1))
+              (println)
+              (rename-image f0 d (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d]
     (println)

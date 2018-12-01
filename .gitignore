@@ -35,8 +35,4 @@
 /.externalToolBuilders/
 /.settings/
 /.README.md.html
-/datetimes.txt
-/exif.txt
-/sort.txt
-/sort-*.txt
-/sort-fgyz.txt
+/*.txt

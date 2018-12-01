@@ -83,10 +83,12 @@
     </exclusion>
    </exclusions>
   </dependency>
+  <!-- 
   <dependency>
    <groupId>io.joshmiller</groupId>
    <artifactId>exif-processor</artifactId>
    <version>${exif-processor-version}</version>
   </dependency>
+   -->
  </dependencies>
 </project>

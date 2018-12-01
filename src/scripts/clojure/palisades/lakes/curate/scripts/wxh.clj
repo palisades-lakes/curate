@@ -1,7 +1,7 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
-(ns palisades.lakes.curate.scripts.software
+(ns palisades.lakes.curate.scripts.wxh
   
   {:doc "collect software tags."
    :author "palisades dot lakes at gmail dot com"
@@ -9,14 +9,13 @@
   
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pp]
-            #_[exif-processor.core :as exif]
             [palisades.lakes.curate.curate :as curate]))
-;; clj src\scripts\clojure\palisades\lakes\curate\scripts\software.clj > software.txt 
+;; clj src\scripts\clojure\palisades\lakes\curate\scripts\wxh.clj > wxh.txt 
 ;;----------------------------------------------------------------
 (let [d (io/file "e:/" "pic")]
   (pp/pprint
     (sort
       (into #{}
-            (mapcat curate/exif-software
-                    (curate/image-file-seq d))))))
+            (map curate/exif-wxh
+                 (curate/image-file-seq d))))))
 ;;----------------------------------------------------------------

@@ -5,12 +5,11 @@
   
   {:doc "experiment wtih exif."
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-29"}
+   :version "2018-11-30"}
   
   (:require [clojure.pprint :as pp]
             [clojure.java.io :as io]
-            [clojure.stacktrace :as stacktrace]
-            [exif-processor.core :as exif])
+            [clojure.stacktrace :as stacktrace])
   (:import [com.drew.imaging ImageMetadataReader]
            [com.drew.metadata Directory Metadata Tag]
            [com.drew.metadata.exif
@@ -20,6 +19,8 @@
 ;; java -jar lib\metadata-extractor-2.11.0.jar e:\photo\original\2013-02-19-14-56-00-NEX-7.arw -hex > metadata-sony.txt
 ;; java -jar lib\metadata-extractor-2.11.0.jar e:\photo\dxo-out\2013-02-19-14-56-00-NEX-7.jpg -hex > metadata-sony-dxo.txt
 ;; java -jar lib\metadata-extractor-2.11.0.jar "e:\photo\dxo-out\2004-07-28-23-43-52-Canon PowerShot A80.jpg" -hex > metadata-canon-dxo.txt
+;; java -jar lib\metadata-extractor-2.11.0.jar e:\pic\2014\03\20140325-164908-sonynex7-6048x4024.arw > arw-exif.txt
+;; java -jar lib\metadata-extractor-2.11.0.jar e:/pic/2000/11/20001127-021544-874x600.jpg > no-exif-width.txt
 ;;----------------------------------------------------------------
 (let [root (io/file "e:/")
       dxo (io/file root "photo" "dxo-out")
