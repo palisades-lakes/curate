@@ -512,6 +512,6 @@
               (rename-image f0 d (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d]
-    (println)
+    #_(println)
     (rename-image f0 d nil)))
 ;;----------------------------------------------------------------
