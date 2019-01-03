@@ -11,11 +11,11 @@ set COMPRESSED=
 set TRACE=
 ::set TRACE=-XX:+PrintGCDetails -XX:+TraceClassUnloading -XX:+TraceClassLoading
 
-::set PROF=
-set PROF=-Xrunhprof:cpu=samples,depth=96,thread=y,doe=y
+set PROF=
+::set PROF=-Xrunhprof:cpu=samples,depth=96,thread=y,doe=y
 
 ::set THRUPUT=-d64 -server -XX:+AggressiveOpts 
-set THRUPUT=-d64 -server
+set THRUPUT=-server
 ::set THRUPUT=
 
 ::set XMX=-Xms29g -Xmx29g -Xmn11g 
