@@ -14,9 +14,9 @@
 ;; TODO: search all drives?
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
-    (doseq [dir ["2018-12"
+    (doseq [dir [#_"2018-12"
                  "2019-01"
-                 "iphone6splus-20181203"
+                 #_"iphone6splus-20181203"
                  #_"nex7-20181203"
                  #_"nex5-20181129"]]
       (let [^java.io.File d0 (io/file "e:/" "Pictures" dir)
