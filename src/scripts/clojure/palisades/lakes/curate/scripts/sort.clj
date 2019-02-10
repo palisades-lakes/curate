@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2019-01-10"}
+   :version "2019-02-09"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -16,6 +16,7 @@
   (binding [*out* w]
     (doseq [dir [#_"2018-12"
                  "2019-01"
+                 "2019-02"
                  #_"iphone6splus-20181203"
                  #_"nex7-20181203"
                  #_"nex5-20181129"]]
