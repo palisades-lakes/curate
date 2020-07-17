@@ -1,24 +1,18 @@
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
-;; exif-processor has reflection and boxing warnings
-;(set! *warn-on-reflection* false)
-;(set! *unchecked-math* false)
 ;;----------------------------------------------------------------
 (ns palisades.lakes.curate.curate
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2018-11-30"}
+   :version "2020-07-16"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
             [clojure.string :as s]
             [clojure.pprint :as pp]
             [clojure.java.io :as io]
-            [clojure.stacktrace :as stacktrace]
-            ;; exif processor overwrites data when more than one 
-            ;; directory has the same tag
-            #_[exif-processor.core :as exif])
+            [clojure.stacktrace :as stacktrace])
   (:import [java.io File FileInputStream]
            [java.nio.file Files LinkOption]
            [java.nio.file.attribute FileTime]
@@ -34,9 +28,6 @@
 ;; TODO: force exif keys to lower case, other standardization
 ;; TODO: detect and label DXO processed files, 
 ;; other image software
-;;----------------------------------------------------------------
-;(set! *warn-on-reflection* true)
-;(set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
 ;; image files
 ;;----------------------------------------------------------------

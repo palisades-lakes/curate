@@ -23,6 +23,8 @@ set XMX=-Xms12g -Xmx12g -Xmn5g
 
 set OPENS=--add-opens java.base/java.lang=ALL-UNNAMED
 set CP=-cp ./src/scripts/clojure;lib/*
+
+set JAVA_HOME=%JAVA12%
 set JAVA="%JAVA_HOME%\bin\java"
 
 set CMD=%JAVA% %THRUPUT% -ea %GC% %PROF% %XMX% %COMPRESSED% %TRACE% %OPENS% %CP% clojure.main %*
