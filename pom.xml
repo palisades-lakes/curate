@@ -10,11 +10,11 @@
  <description>
  "Sample clojure scripts for managing photo collections."
  </description>
- <version>0.0.10-SNAPSHOT</version>
+ <version>0.0.11-SNAPSHOT</version>
  <parent>
   <groupId>palisades-lakes</groupId>
   <artifactId>palisades-lakes-parent</artifactId>
-  <version>0.0.10-SNAPSHOT</version>
+  <version>0.0.11-SNAPSHOT</version>
  </parent>
  <build>
   <plugins>
