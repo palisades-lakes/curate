@@ -1,6 +1,6 @@
 @echo off
-:: mcdonald.john.alan@gmail.com
-:: 2021-03-15
+:: palisades dot lakes at gmail dot com
+:: 2021-04-20
 
 ::set GC=-XX:+AggressiveHeap -XX:+UseStringDeduplication 
 set GC=
@@ -8,17 +8,19 @@ set GC=
 set TRACE=
 ::set TRACE=-XX:+PrintGCDetails -XX:+TraceClassUnloading -XX:+TraceClassLoading
 
-set THRUPUT=-server
-::set THRUPUT=
+::set THRUPUT=-d64 -server -XX:+AggressiveOpts 
+::set THRUPUT=-server
+set THRUPUT=
 
+set XMX=
 ::set XMX=-Xms29g -Xmx29g -Xmn11g 
-set XMX=-Xms12g -Xmx12g -Xmn5g 
+;;set XMX=-Xms12g -Xmx12g -Xmn5g 
 
 set OPENS=--add-opens java.base/java.lang=ALL-UNNAMED
 set CP=-cp ./src/scripts/clojure;lib/*
-
 set JAVA="%JAVA_HOME%\bin\java"
 
-set CMD=%JAVA% %THRUPUT% -ea %GC% %PROF% %XMX% %COMPRESSED% %TRACE% %OPENS% %CP% clojure.main %*
+set CLJOPTS=-Dclojure.main.report=stderr
+set CMD=%JAVA% %THRUPUT% -ea %GC% %XMX% %TRACE% %OPENS% %CP% %CLJOPTS% clojure.main %* 
 ::echo %CMD%
 %CMD%

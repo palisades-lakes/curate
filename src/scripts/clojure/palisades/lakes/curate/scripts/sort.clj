@@ -14,11 +14,25 @@
 ;;----------------------------------------------------------------
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
+    (doseq [dir ["a1"
+                 "a7c"
+                 "Pictures"
+                 ]]
+      (let [^java.io.File d0 (io/file "z:/"  dir)
+            ^java.io.File d1 (io/file "z:/" "sorted")]
+        (if (.exists d0)
+          (doseq [^java.io.File f0 (curate/image-file-seq d0)]
+            (println (.getName f0))
+            (curate/rename-image f0 d1))
+          (println "doesn't exist" (.getPath d0)))))))
+;;----------------------------------------------------------------
+#_(with-open [w (io/writer (str "sort.txt"))]
+  (binding [*out* w]
     (doseq [dir [
                  "2021-02"
                  "2021-03"
                  ]]
-      (let [^java.io.File d0 (io/file "e:/" "Pictures" dir)
+      (let [^java.io.File d0 (io/file "z:/" "Pictures" dir)
             ^java.io.File d1 (io/file "e:/" "pic")]
         (if (.exists d0)
           (doseq [^java.io.File f0 (curate/image-file-seq d0)]
