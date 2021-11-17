@@ -5,7 +5,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2020-07-16"}
+   :version "2021-11-16"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -255,38 +255,38 @@
   (first (get-all exif k)))
 ;;----------------------------------------------------------------
 #_(defn file-attributes ^Map [^File f]
-   (Files/readAttributes
-     (.toPath f) 
-     "*" 
-     ^"[Ljava.nio.file.LinkOption;" (make-array LinkOption 0)))
+    (Files/readAttributes
+      (.toPath f) 
+      "*" 
+      ^"[Ljava.nio.file.LinkOption;" (make-array LinkOption 0)))
 ;;----------------------------------------------------------------
 #_(defn- filetime-to-localdatetime ^LocalDateTime [^FileTime ft]
-   (LocalDateTime/ofInstant 
-     (.toInstant ft) 
-     ZoneOffset/UTC))
+    (LocalDateTime/ofInstant 
+      (.toInstant ft) 
+      ZoneOffset/UTC))
 ;;----------------------------------------------------------------
 #_(defn- exif-datetime 
-  (^LocalDateTime [^Map exif]
-    (when-not (empty? exif)
-      (parse-datetime (get-first exif "Date/Time"))))
-  (^LocalDateTime [^Map exif ^File f]
-    (try
-      (let [ldt (if (empty? exif)
-                  (println "no exif:" (unix-path f))
-                  (exif-datetime exif))]
-        (if (nil? ldt)
-          (let [attributes (file-attributes f)
-                filetime (or (.get attributes "creationTime")
-                             (.get attributes "lastModifiedTime")
-                             )]
-            (filetime-to-localdatetime filetime))
-          ldt))
-      (catch Throwable t (log-error exif f t)))))
+    (^LocalDateTime [^Map exif]
+      (when-not (empty? exif)
+        (parse-datetime (get-first exif "Date/Time"))))
+    (^LocalDateTime [^Map exif ^File f]
+      (try
+        (let [ldt (if (empty? exif)
+                    (println "no exif:" (unix-path f))
+                    (exif-datetime exif))]
+          (if (nil? ldt)
+            (let [attributes (file-attributes f)
+                  filetime (or (.get attributes "creationTime")
+                               (.get attributes "lastModifiedTime")
+                               )]
+              (filetime-to-localdatetime filetime))
+            ldt))
+        (catch Throwable t (log-error exif f t)))))
 (defn- exif-datetime 
   (^LocalDateTime [^Map exif ^File f]
     (try
       (when-not (empty? exif)
-      (parse-datetime (get-first exif "Date/Time")))
+        (parse-datetime (get-first exif "Date/Time")))
       (catch Throwable t (log-error exif f t)))))
 ;;----------------------------------------------------------------
 ;; camera make/model
@@ -336,12 +336,12 @@
                         " " "")
           make (if (starts-with? make "nikon") "nikon" make)
           make (if (starts-with? make "pentax") "pentax" make)]
-      (when (nil? make)
-        (println)
-        (println 
-          "-----------------------------------------------------")
-        (println "no exif make:" (unix-path f))
-        (pp/pprint exif))
+      #_(when (nil? make)
+          (println)
+          (println 
+            "-----------------------------------------------------")
+          (println "no exif make:" (unix-path f))
+          (pp/pprint exif))
       make)
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
@@ -351,12 +351,12 @@
                          " " "")
           ^String model (replace model #"[ \-]+" "")
           ^String model (replace model "*" "")]
-      (when (nil? model)
-        (println)
-        (println 
-          "-----------------------------------------------------")
-        (println "no exif model:" (unix-path f))
-        (pp/pprint exif))
+      #_(when (nil? model)
+          (println)
+          (println 
+            "-----------------------------------------------------")
+          (println "no exif model:" (unix-path f))
+          (pp/pprint exif))
       model)
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
@@ -369,12 +369,12 @@
             ^String model (replace model make "")
             make-model (str make model)
             make-model (replace make-model "pentaxpentax" "pentax")]
-        (when (empty? make-model)
-          (println)
-          (println 
-            "-----------------------------------------------------")
-          (println "no exif make-model" (unix-path f))
-          (pp/pprint exif))
+        #_(when (empty? make-model)
+            (println)
+            (println 
+              "-----------------------------------------------------")
+            (println "no exif make-model" (unix-path f))
+            (pp/pprint exif))
         make-model)
       (catch Throwable t (log-error exif f t))))
   (^String [^File f] (exif-camera (exif-maps f) f)))
@@ -472,7 +472,7 @@
                             (str fname "-" processor)
                             fname)
             ^File new-file (io/file 
-                             d processor year month
+                             d #_processor year month
                              (str fname "." ext))]
         new-file)
       (catch Throwable t (log-error (exif-maps f) f t))))
@@ -484,7 +484,7 @@
     (str (inc (Integer/parseInt version)))))
 ;;----------------------------------------------------------------
 (defn rename-image 
-  ([^File f0 ^File d ^String version]
+  ([^File f0 ^File d echo-new? ^String version]
     (try
       (let [^File f1 (new-path f0 d version)]
         ;; no new path if image file not parsable 
@@ -493,16 +493,19 @@
           #_(println (unix-path f1))
           (if-not (.exists f1)
             (do 
+              (when echo-new? 
+                (println "new:" (unix-path f0))
+                (println "--->" (unix-path f1)))
               (io/make-parents f1)
               (io/copy f0 f1))
             (when-not (identical-contents? f0 f1)
-              (println "similar")
-              (println (unix-path f0))
-              (println (unix-path f1))
-              (println)
-              (rename-image f0 d (increment-version version))))))
+              (rename-image f0 d echo-new?
+                            (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
+  ([^File f0 ^File d echo-new?]
+    #_(println)
+    (rename-image f0 d echo-new? nil))
   ([^File f0 ^File d]
     #_(println)
-    (rename-image f0 d nil)))
+    (rename-image f0 d false nil)))
 ;;----------------------------------------------------------------
