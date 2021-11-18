@@ -462,8 +462,9 @@
             ^String fname (if-not (empty? suffix)
                             (str prefix "-" suffix)
                             prefix)
-            ^String fname (str fname "-" wxh)
-            
+            ^String fname (if (ends-with? fname (str "-" wxh))
+                            fname
+                            (str fname "-" wxh))
             ^String fname (if-not (empty? version)
                             (str fname "-" version)
                             fname)
