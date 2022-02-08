@@ -64,9 +64,6 @@
   </plugins>
  </build>
  <dependencies>
-  <!-- <dependency> <groupId>pandect</groupId> <artifactId>pandect</artifactId> <version>${pandect-version}</version> 
-   </dependency> <dependency> <groupId>digest</groupId> <artifactId>digest</artifactId> 
-   <version>${clj-digest-version}</version> </dependency> -->
   <dependency>
    <groupId>com.adobe.xmp</groupId>
    <artifactId>xmpcore</artifactId>
