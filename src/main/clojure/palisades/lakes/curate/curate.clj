@@ -441,8 +441,8 @@
 ;;----------------------------------------------------------------
 ;; renaming
 ;;----------------------------------------------------------------
-(defn- new-path 
-  (^File [^File f ^File d ^String version]
+(defn- new-filename
+  (^File [^File f ^String version]
     (try
       (let [^Map exif (exif-maps f)
             ^LocalDateTime ldt (exif-datetime exif f)
@@ -455,7 +455,6 @@
             ^String prefix (if ldt
                              (.format ldt file-prefix-format)
                              (file-prefix f))
-            ^String ext (file-type f)
             ^String suffix (or (exif-camera exif f)
                                (file-prefix f))
             ^String wxh (exif-wxh exif f)
@@ -471,23 +470,40 @@
             ^String processor (exif-processor exif f)
             ^String fname (if-not (.equals "original" processor)
                             (str fname "-" processor)
-                            fname)
+                            fname)]
+       fname)
+      (catch Throwable t (log-error (exif-maps f) f t))))
+  (^File [^File f] (new-filename f nil)))
+;;----------------------------------------------------------------
+(defn- new-path-year-month 
+  (^File [^File f ^File d ^String version]
+    (try
+      (let [^Map exif (exif-maps f)
+            ^LocalDateTime ldt (exif-datetime exif f)
+            ^String year (if ldt
+                           (format "%04d" (.getYear ldt))
+                           "none")
+            ^String month (if ldt
+                            (format "%02d" (.getMonthValue ldt))
+                            "no")
+            ^String fname (new-filename version)
+            ^String ext (file-type f)
             ^File new-file (io/file 
                              d #_processor year month
                              (str fname "." ext))]
         new-file)
       (catch Throwable t (log-error (exif-maps f) f t))))
-  (^File [^File f ^File d] (new-path f d nil)))
+  (^File [^File f ^File d] (new-path-year-month f d nil)))
 ;;----------------------------------------------------------------
 (defn- increment-version ^String [^String version]
   (if (empty? version)
     "1"
     (str (inc (Integer/parseInt version)))))
 ;;----------------------------------------------------------------
-(defn rename-image 
+(defn rename-image-year-month 
   ([^File f0 ^File d echo-new? ^String version]
     (try
-      (let [^File f1 (new-path f0 d version)]
+      (let [^File f1 (new-path-year-month f0 d version)]
         ;; no new path if image file not parsable 
         #_(println (unix-path f0))
         (when f1
@@ -500,13 +516,13 @@
               (io/make-parents f1)
               (io/copy f0 f1))
             (when-not (identical-contents? f0 f1)
-              (rename-image f0 d echo-new?
+              (rename-image-year-month f0 d echo-new?
                             (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d echo-new?]
     #_(println)
-    (rename-image f0 d echo-new? nil))
+    (rename-image-year-month f0 d echo-new? nil))
   ([^File f0 ^File d]
     #_(println)
-    (rename-image f0 d false nil)))
+    (rename-image-year-month f0 d false nil)))
 ;;----------------------------------------------------------------
