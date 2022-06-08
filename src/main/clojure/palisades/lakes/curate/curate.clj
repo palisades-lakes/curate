@@ -5,7 +5,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2021-11-16"}
+   :version "2022-06-08"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -360,6 +360,57 @@
       model)
     (catch Throwable t (log-error exif f t))))
 ;;----------------------------------------------------------------
+(defn exif-value
+  (^String [^String k ^Map exif ^File f]
+    (try
+      (get-first exif k)
+      (catch Throwable t (log-error exif f t))))
+  (^String [^String k ^File f] 
+    (exif-value ^String k (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-values
+  (^String [^String k ^Map exif ^File f]
+    (try
+      (get-all exif k)
+      (catch Throwable t (log-error exif f t))))
+  (^String [^String k ^File f] 
+    (exif-values ^String k (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens
+  (^String [^Map exif ^File f] 
+    (exif-value "Lens" exif f))
+  (^String [^File f] (exif-lens (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-type-2
+  (^String [^Map exif ^File f] 
+    (exif-value "Lens Type 2" exif f))
+  (^String [^File f] (exif-lens-type-2 (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-format
+  (^String [^Map exif ^File f]
+    (exif-value "Lens Format" exif f))
+  (^String [^File f] (exif-lens-format (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-make 
+  (^String [^Map exif ^File f]
+    (exif-value "Lens Make" exif f))
+  (^String [^File f] (exif-lens-make (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-spec
+  (^String [^Map exif ^File f]
+    (exif-value "Lens Specification" exif f))
+  (^String [^File f] (exif-lens-spec (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-spec-features
+  (^String [^Map exif ^File f]
+    (exif-value "Lens Spec Features" exif f))
+  (^String [^File f] (exif-lens-spec-features (exif-maps f) f)))
+;;----------------------------------------------------------------
+(defn exif-lens-model
+  (^String [^Map exif ^File f]
+    (exif-value "Lens Model" exif f))
+  (^String [^File f] (exif-lens-model (exif-maps f) f)))
+;;----------------------------------------------------------------
 (defn exif-camera 
   (^String [^Map exif ^File f]
     (try
@@ -471,7 +522,7 @@
             ^String fname (if-not (.equals "original" processor)
                             (str fname "-" processor)
                             fname)]
-       fname)
+        fname)
       (catch Throwable t (log-error (exif-maps f) f t))))
   (^File [^File f] (new-filename f nil)))
 ;;----------------------------------------------------------------
@@ -517,7 +568,7 @@
               (io/copy f0 f1))
             (when-not (identical-contents? f0 f1)
               (rename-image-year-month f0 d echo-new?
-                            (increment-version version))))))
+                                       (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d echo-new?]
     #_(println)
