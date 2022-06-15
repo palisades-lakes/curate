@@ -387,6 +387,7 @@
                      (exif-value "Lens" exif f)
                      nil))
           lens (replace lens "\\" "")
+          lens (replace lens "/" "")
           lens (replace lens " + " "-")
           lens (replace lens " " "")
           lens (replace lens  "iphone6splus" "")
@@ -559,10 +560,8 @@
               1)
             (if (identical-contents? f0 f1)
               0
-              (do 
-                (rename-image
-                  f0 d echo-new? (increment-version version))
-                1)))))
+              (rename-image
+                f0 d echo-new? (increment-version version))))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d echo-new?]
     (rename-image f0 d echo-new? nil))

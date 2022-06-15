@@ -14,11 +14,10 @@
 ;;----------------------------------------------------------------
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
-    (doseq [dir [#_"Pictures"
-                 "iphone"
-                 #_"a7c"
-                 #_"a1"
-                 ]]
+    (doseq [dir [#_"a1"
+                 "a7c"
+                 #_"iphone"
+                 #_"Pictures"]]
       (let [^java.io.File d0 (io/file "z:/"  dir)
             ^java.io.File d1 (io/file "y:/" "sorted")]
         (if (.exists d0)
@@ -26,7 +25,7 @@
                    (reduce 
                      + 
                      (map (fn ^long [^java.io.File f0] 
-                            (curate/rename-image f0 d1 true))
+                            (curate/rename-image f0 d1 false))
                           (curate/image-file-seq d0))))
           (println "doesn't exist" (.getPath d0)))))
     ))

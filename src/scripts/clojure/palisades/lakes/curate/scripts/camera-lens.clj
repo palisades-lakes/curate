@@ -12,7 +12,7 @@
             [palisades.lakes.curate.curate :as curate]))
 ;; clj src\scripts\clojure\palisades\lakes\curate\scripts\camera-lens.clj > camera-lens.txt 
 ;;----------------------------------------------------------------
-(let [d (io/file "z:/"
+(let [d (io/file "z:/iphone"
                  #_"a1"
                  #_"resolved")]
   (pp/pprint
