@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-03-14"}
+   :version "2022-06-14"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -15,39 +15,19 @@
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
     (doseq [dir [#_"Pictures"
-                 #_"photo"
-                 "a7c/2022"
-                 "a1/2022"
                  "iphone"
+                 #_"a7c"
+                 #_"a1"
                  ]]
       (let [^java.io.File d0 (io/file "z:/"  dir)
-            ^java.io.File d1 (io/file "z:/" "sorted")]
+            ^java.io.File d1 (io/file "y:/" "sorted")]
         (if (.exists d0)
-          (doseq [^java.io.File f0 (curate/image-file-seq d0)]
-            #_(println (.getName f0))
-            (curate/rename-image-year-month f0 d1 false))
+          (println "new"
+                   (reduce 
+                     + 
+                     (map (fn ^long [^java.io.File f0] 
+                            (curate/rename-image f0 d1 true))
+                          (curate/image-file-seq d0))))
           (println "doesn't exist" (.getPath d0)))))
-    (doseq [dir ["pic"
-                 ]]
-      (let [^java.io.File d0 (io/file "z:/"  dir)
-            ^java.io.File d1 (io/file "z:/" "sorted")]
-        (if (.exists d0)
-          (doseq [^java.io.File f0 (curate/image-file-seq d0)]
-            #_(println (.getName f0))
-            (curate/rename-image-year-month f0 d1 true))
-          (println "doesn't exist" (.getPath d0)))))))
-;;----------------------------------------------------------------
-#_(with-open [w (io/writer (str "sort.txt"))]
-  (binding [*out* w]
-    (doseq [dir [
-                 "2021-02"
-                 "2021-03"
-                 ]]
-      (let [^java.io.File d0 (io/file "z:/" "Pictures" dir)
-            ^java.io.File d1 (io/file "e:/" "pic")]
-        (if (.exists d0)
-          (doseq [^java.io.File f0 (curate/image-file-seq d0)]
-            (println (.getName f0))
-            (curate/rename-image-year-month f0 d1))
-          (println "doesn't exist" (.getPath d0)))))))
+    ))
 ;;----------------------------------------------------------------

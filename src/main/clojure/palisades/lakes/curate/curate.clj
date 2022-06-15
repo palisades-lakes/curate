@@ -5,7 +5,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-06-08"}
+   :version "2022-06-14"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]
@@ -14,8 +14,8 @@
             [clojure.java.io :as io]
             [clojure.stacktrace :as stacktrace])
   (:import [java.io File FileInputStream]
-           [java.nio.file Files LinkOption]
-           [java.nio.file.attribute FileTime]
+           #_[java.nio.file Files LinkOption]
+           #_[java.nio.file.attribute FileTime]
            [java.security DigestInputStream MessageDigest]
            [java.time LocalDateTime ZoneOffset]
            [java.time.format DateTimeFormatter]
@@ -29,12 +29,28 @@
 ;; TODO: detect and label DXO processed files, 
 ;; other image software
 ;;----------------------------------------------------------------
+;; string utilities
+;;----------------------------------------------------------------
+(defn- replace ^String [^String s match ^String replacement]
+  "null safe."
+  (when (and s match) 
+    (s/replace s match replacement)))
+(defn- starts-with?  [^String s ^String prefix]
+  "null safe."
+  (when (and s prefix) (.startsWith s prefix)))
+(defn ends-with?  [^String s ^String suffix]
+  "null safe."
+  (when (and s suffix) (.endsWith s suffix)))
+(defn- lower-case ^String  [^String s]
+  "null safe."
+  (when s (s/lower-case s)))
+;;----------------------------------------------------------------
 ;; image files
 ;;----------------------------------------------------------------
 (defn- unix-path 
   "return a unix style pathname string."
   ^String [^File f]
-  (s/replace (.getPath f) "\\" "/"))
+  (when f (s/replace (.getPath f) "\\" "/")))
 ;;----------------------------------------------------------------
 (defn- file-prefix ^String [^File f]
   (let [filename (.getName f)
@@ -140,7 +156,10 @@
     "x3f" ;; Sigma
     })
 ;;----------------------------------------------------------------
-(defn- image-file? [^File f] (image-file-type? (file-type f)))
+(defn- image-file? [^File f] 
+  ;; filter out some odd hidden files in recycle bins, etc.
+  (and (not (starts-with? (.getName f) "$"))
+       (image-file-type? (file-type f))))
 ;;----------------------------------------------------------------
 (defn image-file-seq 
   
@@ -182,7 +201,7 @@
         ^Map lhm (LinkedHashMap.)]
     ;; preserve iteration order, so later looks can give 
     ;; priority to first occurence of a tag.
-    ;; ? might not be a goodf idea
+    ;; ? might not be a good idea
     (doseq [^Directory d (.getDirectories m)]
       (.put lhm d (directory-map d)))
     (Collections/unmodifiableMap lhm)))
@@ -291,24 +310,9 @@
 ;;----------------------------------------------------------------
 ;; camera make/model
 ;;----------------------------------------------------------------
-(defn- replace ^String [^String s match ^String replacement]
-  "null safe."
-  (when (and s match) 
-    (s/replace s match replacement)))
-(defn- starts-with?  [^String s ^String prefix]
-  "null safe."
-  (when (and s prefix) (.startsWith s prefix)))
-(defn ends-with?  [^String s ^String suffix]
-  "null safe."
-  (when (and s suffix) (.endsWith s suffix)))
-(defn- lower-case ^String  [^String s]
-  "null safe."
-  (when s (s/lower-case s)))
-;;----------------------------------------------------------------
 (defn- exif-width ^long [^Map exif ^File f]
   (try
-    (let [exif (exif-maps f)
-          s (or (get-first exif "Exif Image Width")
+    (let [s (or (get-first exif "Exif Image Width")
                 (get-first exif "Image Width"))
           [n units] (s/split s #"\s")]
       (when units (assert (= units "pixels")))
@@ -331,7 +335,7 @@
 ;;----------------------------------------------------------------
 (defn- exif-make ^String [^Map exif ^File f]
   (try
-    (let [exif (exif-maps f)
+    (let [;;exif (exif-maps f)
           make (replace (lower-case (get-first exif "Make")) 
                         " " "")
           make (if (starts-with? make "nikon") "nikon" make)
@@ -378,38 +382,23 @@
 ;;----------------------------------------------------------------
 (defn exif-lens
   (^String [^Map exif ^File f] 
-    (exif-value "Lens" exif f))
+    (let [lens (lower-case
+                 (or (exif-value "Lens Model" exif f)
+                     (exif-value "Lens" exif f)
+                     nil))
+          lens (replace lens "\\" "")
+          lens (replace lens " + " "-")
+          lens (replace lens " " "")
+          lens (replace lens  "iphone6splus" "")
+          lens (replace lens  "camera" "")]
+      lens))
+  
+  
   (^String [^File f] (exif-lens (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-type-2
-  (^String [^Map exif ^File f] 
-    (exif-value "Lens Type 2" exif f))
-  (^String [^File f] (exif-lens-type-2 (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-format
-  (^String [^Map exif ^File f]
-    (exif-value "Lens Format" exif f))
-  (^String [^File f] (exif-lens-format (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-make 
-  (^String [^Map exif ^File f]
-    (exif-value "Lens Make" exif f))
-  (^String [^File f] (exif-lens-make (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-spec
-  (^String [^Map exif ^File f]
-    (exif-value "Lens Specification" exif f))
-  (^String [^File f] (exif-lens-spec (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-spec-features
-  (^String [^Map exif ^File f]
-    (exif-value "Lens Spec Features" exif f))
-  (^String [^File f] (exif-lens-spec-features (exif-maps f) f)))
-;;----------------------------------------------------------------
-(defn exif-lens-model
-  (^String [^Map exif ^File f]
-    (exif-value "Lens Model" exif f))
-  (^String [^File f] (exif-lens-model (exif-maps f) f)))
+#_(defn exif-lens
+    (^String [^Map exif ^File f] 
+      (exif-value "Lens" exif f))
+    (^String [^File f] (exif-lens (exif-maps f) f)))
 ;;----------------------------------------------------------------
 (defn exif-camera 
   (^String [^Map exif ^File f]
@@ -493,10 +482,11 @@
 ;; renaming
 ;;----------------------------------------------------------------
 (defn- new-filename
-  (^File [^File f ^String version]
+  (^File [^Map exif ^File f ^String version]
+    (assert (not (nil? exif)))
+    (assert (not (nil? f)))
     (try
-      (let [^Map exif (exif-maps f)
-            ^LocalDateTime ldt (exif-datetime exif f)
+      (let [^LocalDateTime ldt (exif-datetime exif f)
             ^String year (if ldt
                            (format "%04d" (.getYear ldt))
                            "none")
@@ -523,57 +513,59 @@
                             (str fname "-" processor)
                             fname)]
         fname)
-      (catch Throwable t (log-error (exif-maps f) f t))))
-  (^File [^File f] (new-filename f nil)))
-;;----------------------------------------------------------------
-(defn- new-path-year-month 
-  (^File [^File f ^File d ^String version]
-    (try
-      (let [^Map exif (exif-maps f)
-            ^LocalDateTime ldt (exif-datetime exif f)
-            ^String year (if ldt
-                           (format "%04d" (.getYear ldt))
-                           "none")
-            ^String month (if ldt
-                            (format "%02d" (.getMonthValue ldt))
-                            "no")
-            ^String fname (new-filename version)
-            ^String ext (file-type f)
-            ^File new-file (io/file 
-                             d #_processor year month
-                             (str fname "." ext))]
-        new-file)
-      (catch Throwable t (log-error (exif-maps f) f t))))
-  (^File [^File f ^File d] (new-path-year-month f d nil)))
+      (catch Throwable t (log-error exif f t))))
+  (^File [^Map exif ^File f] (new-filename exif f nil)))
 ;;----------------------------------------------------------------
 (defn- increment-version ^String [^String version]
   (if (empty? version)
     "1"
     (str (inc (Integer/parseInt version)))))
 ;;----------------------------------------------------------------
-(defn rename-image-year-month 
+(defn- new-path-camera-lens-year-month 
+  (^File [^Map exif ^File f ^File d ^String version]
+    (assert (not (nil? exif)))
+    (assert (not (nil? f)))
+    (try
+      (let[^LocalDateTime ldt (exif-datetime exif f)
+           ^String year (when ldt (format "%04d" (.getYear ldt)))
+           ^String month (when ldt (format "%02d" (.getMonthValue ldt)))
+           ^String camera (exif-camera exif f)
+           ^String lens (exif-lens exif f)
+           ^String fname (new-filename exif f version)
+           ^String ext (file-type f)
+           ^File folder (apply 
+                          io/file 
+                          (remove nil? [d camera lens year month]))
+           ^File new-file (io/file folder (str fname "." ext))]
+        new-file)
+      (catch Throwable t (log-error exif f t))))
+  (^File [^File f ^File d ^String version]
+    (new-path-camera-lens-year-month (exif-maps f) f d version))
+  (^File [^File f ^File d] (new-path-camera-lens-year-month f d nil)))
+;;----------------------------------------------------------------
+(defn rename-image 
   ([^File f0 ^File d echo-new? ^String version]
     (try
-      (let [^File f1 (new-path-year-month f0 d version)]
+      (let [^File f1 (new-path-camera-lens-year-month f0 d version)]
         ;; no new path if image file not parsable 
-        #_(println (unix-path f0))
         (when f1
-          #_(println (unix-path f1))
           (if-not (.exists f1)
             (do 
               (when echo-new? 
                 (println "new:" (unix-path f0))
                 (println "--->" (unix-path f1)))
               (io/make-parents f1)
-              (io/copy f0 f1))
-            (when-not (identical-contents? f0 f1)
-              (rename-image-year-month f0 d echo-new?
-                                       (increment-version version))))))
+              (io/copy f0 f1)
+              1)
+            (if (identical-contents? f0 f1)
+              0
+              (do 
+                (rename-image
+                  f0 d echo-new? (increment-version version))
+                1)))))
       (catch Throwable t (log-error (exif-maps f0) f0 t))))
   ([^File f0 ^File d echo-new?]
-    #_(println)
-    (rename-image-year-month f0 d echo-new? nil))
+    (rename-image f0 d echo-new? nil))
   ([^File f0 ^File d]
-    #_(println)
-    (rename-image-year-month f0 d false nil)))
+    (rename-image f0 d false nil)))
 ;;----------------------------------------------------------------
