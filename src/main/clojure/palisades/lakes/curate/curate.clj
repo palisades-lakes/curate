@@ -5,7 +5,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-06-14"}
+   :version "2022-06-15"}
   
   (:refer-clojure :exclude [replace])
   (:require [clojure.set :as set]

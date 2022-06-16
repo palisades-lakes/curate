@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-06-14"}
+   :version "2022-06-15"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -14,10 +14,11 @@
 ;;----------------------------------------------------------------
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
-    (doseq [dir [#_"a1"
+    (doseq [dir ["a1"
                  "a7c"
-                 #_"iphone"
-                 #_"Pictures"]]
+                 "iphone"
+                 "Pictures"
+                 "portfolio"]]
       (let [^java.io.File d0 (io/file "z:/"  dir)
             ^java.io.File d1 (io/file "y:/" "sorted")]
         (if (.exists d0)
@@ -26,6 +27,20 @@
                      + 
                      (map (fn ^long [^java.io.File f0] 
                             (curate/rename-image f0 d1 false))
+                          (curate/image-file-seq d0))))
+          (println "doesn't exist" (.getPath d0)))))
+    ))
+(with-open [w (io/writer (str "resolved.txt"))]
+  (binding [*out* w]
+    (doseq [dir ["resolved"]]
+      (let [^java.io.File d0 (io/file "z:/"  dir)
+            ^java.io.File d1 (io/file "y:/" "sorted")]
+        (if (.exists d0)
+          (println "new"
+                   (reduce 
+                     + 
+                     (map (fn ^long [^java.io.File f0] 
+                            (curate/rename-image f0 d1 true))
                           (curate/image-file-seq d0))))
           (println "doesn't exist" (.getPath d0)))))
     ))
