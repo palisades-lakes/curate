@@ -20,7 +20,7 @@
                  ;#_"Pictures"
                  #_"portfolio"]]
       (let [^java.io.File d0 (io/file "z:/"  dir)
-            ^java.io.File d1 (io/file "y:/" "sorted")]
+            ^java.io.File d1 (io/file "z:/" "sorted")]
         (if (.exists d0)
           (println "new"
                    (reduce 
