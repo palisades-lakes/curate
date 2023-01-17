@@ -28,7 +28,6 @@
 *.gls
 *.ilg
 *.ind
-*.out
 *.xdy
 *.ist
 *syntex*
@@ -36,3 +35,9 @@
 /.settings/
 /.README.md.html
 /*.txt
+/.idea/.gitignore
+/.idea/ClojureProjectResolveSettings.xml
+/curate.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
