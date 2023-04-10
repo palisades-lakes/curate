@@ -17,7 +17,7 @@
   (binding [*out* w]
     (doseq [dir ["a1"
                  "a7c"
-                 #_"iphone"
+                 "iphone14"
                  #_"Pictures"
                  #_"portfolio"]]
       (let [^java.io.File d0 (io/file "z:/"  dir)

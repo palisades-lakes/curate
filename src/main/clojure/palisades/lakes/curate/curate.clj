@@ -8,7 +8,7 @@
    :version "2022-06-15"}
   
   (:refer-clojure :exclude [replace])
-  (:require [clojure.set :as set]
+  (:require #_[clojure.set :as set]
             [clojure.string :as s]
             [clojure.pprint :as pp]
             [clojure.java.io :as io]
@@ -20,8 +20,8 @@
            [java.time LocalDateTime ZoneOffset]
            [java.time.format DateTimeFormatter]
            [java.util Arrays Collections LinkedHashMap Map]
-           [com.drew.imaging ImageMetadataReader]
-           [com.drew.metadata Directory Metadata Tag]
+           #_[com.drew.imaging ImageMetadataReader]
+           #_[com.drew.metadata Directory Metadata Tag]
            #_[com.drew.metadata.exif
               ExifIFD0Directory ExifSubIFDDirectory]))
 
