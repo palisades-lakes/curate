@@ -1,4 +1,3 @@
-
 (set! *warn-on-reflection* true)
 (set! *unchecked-math* :warn-on-boxed)
 ;;----------------------------------------------------------------
@@ -6,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-12-13"}
+   :version "2023-05-15"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -15,8 +14,8 @@
 ;;----------------------------------------------------------------
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
-    (doseq [dir ["a1"
-                 "a7c"
+    (doseq [dir ["a1/2023-05-w1w2"
+                 "a7c/2023-05-w1w2"
                  "iphone14"
                  #_"Pictures"
                  #_"portfolio"]]
