@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2023-05-15"}
+   :version "2023-07-21"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate]))
@@ -14,8 +14,9 @@
 ;;----------------------------------------------------------------
 (with-open [w (io/writer (str "sort.txt"))]
   (binding [*out* w]
-    (doseq [dir ["a1/2023-05-w1w2"
-                 "a7c/2023-05-w1w2"
+    (doseq [dir ["a1/2023-06-w4"
+                 "a1/2023-07-w123"
+                 #_"a7c/2023-06"
                  "iphone14"
                  #_"Pictures"
                  #_"portfolio"]]
