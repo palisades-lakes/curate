@@ -5,7 +5,7 @@
   
   {:doc "photo curation utilities"
    :author "palisades dot lakes at gmail dot com"
-   :version "2022-06-15"}
+   :version "2023-07-31"}
   
   (:refer-clojure :exclude [replace])
   (:require #_[clojure.set :as set]
@@ -20,8 +20,8 @@
            [java.time LocalDateTime ZoneOffset]
            [java.time.format DateTimeFormatter]
            [java.util Arrays Collections LinkedHashMap Map]
-           #_[com.drew.imaging ImageMetadataReader]
-           #_[com.drew.metadata Directory Metadata Tag]
+           [com.drew.imaging ImageMetadataReader]
+           [com.drew.metadata Directory Metadata Tag]
            #_[com.drew.metadata.exif
               ExifIFD0Directory ExifSubIFDDirectory]))
 
