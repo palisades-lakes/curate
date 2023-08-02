@@ -16,10 +16,11 @@
   (binding [*out* w]
     (doseq [dir [#_"a1/2023-06-w4"
                  #_"a1/2023-07-w123"
-                 "a7c/2023-07"
+                 #_"a7c/2023-07"
                  ;; note need to double underscores in filenames
-                 "iphone14/202307__"
-                 "iphone14/202308__"
+                 #_"iphone14/202307__"
+                 #_"iphone14/202308__"
+                 "iphone14"
                  #_"Pictures"
                  #_"portfolio"]]
       (let [^java.io.File d0 (io/file "Z:/"  dir)
