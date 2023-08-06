@@ -5,7 +5,7 @@
 
   {:doc     "photo curation utilities"
    :author  "palisades dot lakes at gmail dot com"
-   :version "2023-08-02"}
+   :version "2023-08-06"}
 
   (:refer-clojure :exclude [replace])
   (:require #_[clojure.set :as set]
@@ -13,11 +13,12 @@
     [clojure.pprint :as pp]
     [clojure.java.io :as io]
     [clojure.stacktrace :as stacktrace])
-  (:import [java.io File FileInputStream]
+  (:import [clojure.lang IFn]
+           [java.io File FileInputStream]
     #_[java.nio.file Files LinkOption]
     #_[java.nio.file.attribute FileTime]
            [java.security DigestInputStream MessageDigest]
-           [java.time LocalDateTime ZoneOffset]
+           [java.time LocalDate LocalDateTime ZoneOffset]
            [java.time.format DateTimeFormatter]
            [java.util Arrays Collections LinkedHashMap Map]
            [com.drew.imaging ImageMetadataReader]
@@ -567,32 +568,51 @@
    (new-path-camera-lens-year-month (exif-maps f) f d version))
   (^File [^File f ^File d] (new-path-camera-lens-year-month f d nil)))
 ;;----------------------------------------------------------------
+;; filters
+;;----------------------------------------------------------------
+;; return a closure that returns <code>true</code> for exif-datetime
+;; strictly after the given date time.
+(defn after-date? [^LocalDate inclusive]
+  (fn [^Map exif ^File f]
+    (when exif
+      (let [^LocalDateTime ldt (exif-datetime exif f)]
+        (and ldt (.isAfter (.toLocalDate ldt) inclusive))))))
+;;----------------------------------------------------------------
 ;; TODO: parameterize folder pattern, ie, day vs no day. Pass in
 ;; function or keyword?
 (defn rename-image
-  ([^File f0 ^File d echo-new? ^String version]
+  ([^File f0 ^IFn tester ^File d echo-new? ^String version]
+   ;(println)
+   ;(println "tester"  tester)
+   ;(println "f0"  f0)
+   ;(println "d"  d)
+   ;(println "echo" echo-new?)
+   ;(println "version" version)
+   ;(println)
+   ;(flush)
    (try
-     (let [^File f1
-           #_(new-path-camera-lens-year-month f0 d version)
-           (new-path-camera-lens-year-month-day f0 d version)
-           ]
-       ;; no new path if image file not parsable
-       (when f1
-         (if-not (.exists f1)
-           (do
-             (when echo-new?
-               (println "new:" (unix-path f0))
-               (println "--->" (unix-path f1)))
-             (io/make-parents f1)
-             (io/copy f0 f1)
-             1)
-           (if (identical-contents? f0 f1)
-             0
-             (rename-image
-               f0 d echo-new? (increment-version version))))))
+     (let [^Map exif (exif-maps f0)]
+       (if-not (.invoke tester exif f0)
+         0
+         (let [^File f1
+               #_(new-path-camera-lens-year-month f0 d version)
+               (new-path-camera-lens-year-month-day exif f0 d version)
+               ]
+           ;; no new path if image file not parsable
+           (when f1
+             (if-not (.exists f1)
+               (do
+                 (when echo-new?
+                   (println "new:" (unix-path f0))
+                   (println "--->" (unix-path f1)))
+                 (io/make-parents f1)
+                 (io/copy f0 f1)
+                 1)
+               (if (identical-contents? f0 f1)
+                 0
+                 (rename-image f0 tester d echo-new? (increment-version version))))))))
      (catch Throwable t (log-error (exif-maps f0) f0 t))))
-  ([^File f0 ^File d echo-new?]
-   (rename-image f0 d echo-new? nil))
-  ([^File f0 ^File d]
-   (rename-image f0 d false nil)))
+  ([^File f0 ^IFn tester ^File d echo-new?] (rename-image f0 tester d echo-new? nil))
+  #_([^File f0 ^IFn tester ^File d] (rename-image f0 tester d false nil))
+  #_([^File f0 ^File d] (rename-image f0 (constantly true) d false nil)))
 ;;----------------------------------------------------------------
