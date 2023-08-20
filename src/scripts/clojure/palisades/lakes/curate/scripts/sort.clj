@@ -16,7 +16,7 @@
 (defn sort-images [^clojure.lang.IFn tester ^java.io.File d1]
   (with-open [w (io/writer (io/file d1 "sort.txt"))]
     (binding [*out* w]
-      (doseq [dir [#_"a1"
+      (doseq [dir ["a1"
                    "a7c"
                    "iphone14"
                    #_"Pictures"
@@ -32,7 +32,7 @@
             (println "doesn't exist" (.getPath d0)))))
       )))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2023 8 12))]
+(let [tester (curate/after-date? (LocalDate/of 2023 8 18))]
   (sort-images tester (io/file "Z:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
 
