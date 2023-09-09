@@ -32,7 +32,7 @@
             (println "doesn't exist" (.getPath d0)))))
       )))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2023 8 18))]
+(let [tester (curate/after-date? (LocalDate/of 2023 9 8))]
   (sort-images tester (io/file "Z:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
 
