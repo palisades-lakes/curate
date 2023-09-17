@@ -14,23 +14,24 @@
 ;; clj src\scripts\clojure\palisades\lakes\curate\scripts\sort.clj
 ;;----------------------------------------------------------------
 (defn sort-images [^clojure.lang.IFn tester ^java.io.File d1]
-  (with-open [w (io/writer (io/file d1 "sort.txt"))]
-    (binding [*out* w]
-      (doseq [dir ["a1"
-                   "a7c"
-                   "iphone14"
-                   #_"Pictures"
-                   #_"portfolio"]]
-        (let [^java.io.File d0 (io/file "Z:/"  dir)]
-          (if (.exists d0)
-            (println "new"
-                     (reduce
-                       +
-                       (map (fn ^long [^java.io.File f0]
-                              (curate/rename-image f0 tester d1 false))
-                            (curate/image-file-seq d0))))
-            (println "doesn't exist" (.getPath d0)))))
-      )))
+  (let [logfile (io/file d1 "sort.txt")]
+    (io/make-parents logfile)
+    (with-open [w (io/writer logfile)]
+      (binding [*out* w]
+        (doseq [dir ["a1"
+                     "a7c"
+                     "iphone14"
+                     #_"Pictures"
+                     #_"portfolio"]]
+          (let [^java.io.File d0 (io/file "Z:/"  dir)]
+            (if (.exists d0)
+              (println "new"
+                       (reduce
+                         +
+                         (map (fn ^long [^java.io.File f0]
+                                (curate/rename-image f0 tester d1 false))
+                              (curate/image-file-seq d0))))
+              (println "doesn't exist" (.getPath d0)))))))))
 ;;----------------------------------------------------------------
 (let [tester (curate/after-date? (LocalDate/of 2023 9 8))]
   (sort-images tester (io/file "Z:/" "sorted"))
