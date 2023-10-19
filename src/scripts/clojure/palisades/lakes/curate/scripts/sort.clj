@@ -18,7 +18,7 @@
     (io/make-parents logfile)
     (with-open [w (io/writer logfile)]
       (binding [*out* w]
-        (doseq [dir ["a1"
+        (doseq [dir [#_"a1"
                      "a7c"
                      "iphone14"
                      #_"Pictures"
@@ -27,13 +27,12 @@
             (if (.exists d0)
               (println "new"
                        (reduce
-                         +
-                         (map (fn ^long [^java.io.File f0]
+                         + (map (fn ^long [^java.io.File f0]
                                 (curate/rename-image f0 tester d1 false))
                               (curate/image-file-seq d0))))
               (println "doesn't exist" (.getPath d0)))))))))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2023 9 8))]
+(let [tester (curate/after-date? (LocalDate/of 2023 10 8))]
   (sort-images tester (io/file "Z:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
 
