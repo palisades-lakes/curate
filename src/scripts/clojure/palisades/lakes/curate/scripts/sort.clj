@@ -32,7 +32,7 @@
                               (curate/image-file-seq d0))))
               (println "doesn't exist" (.getPath d0)))))))))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2024 10 3))]
+(let [tester (curate/after-date? (LocalDate/of 2024 12 4))]
 
   (sort-images tester (io/file "X:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
