@@ -22,6 +22,7 @@
       (binding [*out* w]
         (doseq [dir ["a1"
                      "a7c"
+                     "a7r"
                      "iphone14"
                      #_"Pictures"
                      #_"portfolio"]]
@@ -34,7 +35,7 @@
                               (curate/image-file-seq d0))))
               (println "doesn't exist" (.getPath d0)))))))))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2025 1 11))]
+(let [tester (curate/after-date? (LocalDate/of 2025 2 12))]
 
   (sort-images tester (io/file "X:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
