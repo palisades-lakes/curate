@@ -5,7 +5,7 @@
   
   {:doc "rename and de-dupe image files."
    :author "palisades dot lakes at gmail dot com"
-   :version "2024-03-02"}
+   :version "2025-03-05"}
   
   (:require [clojure.java.io :as io]
             [palisades.lakes.curate.curate :as curate])
@@ -22,7 +22,7 @@
       (binding [*out* w]
         (doseq [dir ["a1"
                      "a7c"
-                     "a7r"
+                     "a7cr"
                      "iphone14"
                      #_"Pictures"
                      #_"portfolio"]]
@@ -35,7 +35,7 @@
                               (curate/image-file-seq d0))))
               (println "doesn't exist" (.getPath d0)))))))))
 ;;----------------------------------------------------------------
-(let [tester (curate/after-date? (LocalDate/of 2025 2 12))]
+(let [tester (curate/after-date? (LocalDate/of 2025 2 25))]
 
   (sort-images tester (io/file "X:/" "sorted"))
   (sort-images tester (io/file "Y:/" "selecting")))
